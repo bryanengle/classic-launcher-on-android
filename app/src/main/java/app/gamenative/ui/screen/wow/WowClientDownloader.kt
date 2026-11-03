@@ -700,8 +700,8 @@ object WowClientDownloader {
         }
 
         /**
-         * [range] (or the whole file) in parallel [SEGMENT_BYTES] pieces when it is large; small ones and servers that do not honour
-         * ranges take the single request. Null when the CDN does not have the file.
+         * [range] (or the whole file) in parallel [SEGMENT_BYTES] pieces when it is large; small ones take a single request.
+         * Each piece stays bounded even if a server ignores Range. Null when the CDN does not have the file.
          */
         fun fetchFast(kind: String, key: String, range: LongRange?, onSize: (Long) -> Unit = {}, onBytes: ((Long) -> Unit)? = null): ByteArray? {
             val total = if (range != null) range.last - range.first + 1 else head(kind, key) ?: return null
@@ -746,6 +746,9 @@ object WowClientDownloader {
                     Net.http.newCall(request).execute().use { response ->
                         when {
                             response.isSuccessful -> {
+                                if (range != null && response.code == 200 && host != tryHosts.lastOrNull { HOST_PATTERN.matches(it) }) {
+                                    throw IOException("CDN ignored requested range; trying next server")
+                                }
                                 val body = response.body ?: throw IOException("Empty CDN response")
                                 val length = range?.let { it.last - it.first + 1 } ?: body.contentLength()
                                 if (range != null && (range.first < 0 || length <= 0)) throw IOException("Invalid CDN range")

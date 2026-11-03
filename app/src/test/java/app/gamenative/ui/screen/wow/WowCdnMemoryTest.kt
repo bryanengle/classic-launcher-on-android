@@ -46,6 +46,20 @@ class WowCdnMemoryTest {
         }
     }
 
+    @Test fun anotherHostIsPreferredBeforeStreamingAnIgnoredRange() {
+        MockWebServer().use { first ->
+            MockWebServer().use { second ->
+                first.enqueue(MockResponse().setBody("0123456789abcdef").setHeader("Content-Length", "1135560696"))
+                second.enqueue(MockResponse().setResponseCode(206).setHeader("Content-Range", "bytes 8-11/16").setBody("89ab"))
+                first.start(); second.start()
+                val client = WowClientDownloader.Cdn(listOf("127.0.0.1:${first.port}", "127.0.0.1:${second.port}"), "tpr/wow")
+                assertEquals("89ab", String(client.fetch("data", key, 8L..11L)!!))
+                assertEquals(1, first.requestCount)
+                assertEquals(1, second.requestCount)
+            }
+        }
+    }
+
     @Test fun wrongContentRangeIsRejected() {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setResponseCode(206).setHeader("Content-Range", "bytes 0-3/16").setBody("0123"))
