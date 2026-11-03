@@ -52,3 +52,5 @@ Original launcher: **DeadmanDog**, based on **jaredgei/wow-forever-android**, **
 ConsolePort: **Sebastian Lindfors / seblindfors**, [version 3.3.13](https://github.com/seblindfors/ConsolePort/releases/tag/3.3.13), distributed unmodified under the Artistic License 2.0. Its original license and notices are preserved inside `ConsolePort/LICENSE.md` in the bundled ZIP and installed addon. Source: [seblindfors/ConsolePort](https://github.com/seblindfors/ConsolePort/tree/3.3.13).
 
 See [UPSTREAM_README.md](UPSTREAM_README.md) for original documentation and full credits, [LICENSE](LICENSE), [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES), and [SOURCES.md](SOURCES.md). Upstream documentation describes Forever and the original A840 configuration, not this test fork. Source for upstream custom runtime packages is available through the upstream maintainer as described in SOURCES.md.
+
+Classic v0.1.2 also reads CDN archive indexes using their validated footer and entry count. It excludes the trailing lookup table, which previously produced bogus gigabyte-sized file ranges on Classic. Existing downloaded game data can be resumed.

@@ -70,7 +70,7 @@ class WowClassicEraInstallTest {
         val cdnBytes = "archives = $archiveKey\n".toByteArray()
         val build = md5(buildBytes); val cdn = md5(cdnBytes)
         val payloads = mapOf(build to buildBytes, cdn to cdnBytes, installKey to blte(install(files)), encodingKey to encoding(files),
-            md5(blte(client)) to blte(client), "$archiveKey.index" to ByteArray(4096))
+            md5(blte(client)) to blte(client), "$archiveKey.index" to archiveIndexFixture(0))
         val server = MockWebServer()
         server.dispatcher = object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse {

@@ -64,7 +64,7 @@ class WowVoiceRepairCdnTest {
         val buildBytes = "install = $installKey $installKey\nencoding = $encodingKey $encodingKey\n".toByteArray()
         val cdnBytes = "archives = $archiveKey\n".toByteArray()
         val build = md5(buildBytes); val cdn = md5(cdnBytes)
-        val index = ByteArray(4096); val archive = ByteArrayOutputStream()
+        val index = archiveIndexFixture(files.size); val archive = ByteArrayOutputStream()
         val ib = ByteBuffer.wrap(index).order(ByteOrder.BIG_ENDIAN)
         files.values.forEachIndexed { i, bytes ->
             val encoded = blte(bytes); unhex(md5(encoded)).copyInto(index, i * 24)

@@ -899,15 +899,11 @@ object WowClientDownloader {
                     fetched
                 }
                 val buffer = ByteBuffer.wrap(index)
-                for (block in 0 until index.size / 4096 * 4096 step 4096) {
-                    var pos = block
-                    while (pos <= block + 4096 - 24) {
-                        if (hex(index, pos, 16) == ekey) {
-                            val size = buffer.getInt(pos + 16).toLong() and 0xFFFFFFFFL
-                            val offset = buffer.getInt(pos + 20).toLong() and 0xFFFFFFFFL
-                            return cdn.fetchFast("data", archive, offset until offset + size, onSize, onBytes)
-                        }
-                        pos += 24
+                for (pos in WowArchiveIndex.entryOffsets(index)) {
+                    if (hex(index, pos, 16) == ekey) {
+                        val size = buffer.getInt(pos + 16).toLong() and 0xFFFFFFFFL
+                        val offset = buffer.getInt(pos + 20).toLong() and 0xFFFFFFFFL
+                        return cdn.fetchFast("data", archive, offset until offset + size, onSize, onBytes)
                     }
                 }
             }

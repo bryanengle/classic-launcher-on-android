@@ -67,22 +67,17 @@ internal object WowGameDataDownloader {
                     val local = File(indices, "$archive.index")
                     val data = if (local.isFile) local.readBytes() else (cdn.fetch("data", "$archive.index") ?: return@submit).also { local.writeBytes(it) }
                     val bb = ByteBuffer.wrap(data)
-                    var block = 0
-                    while (block + 4096 <= data.size - 28) {
-                        var p = block
-                        while (p <= block + 4096 - 24) {
-                            val pre = bb.getLong(p)
-                            if (pre == 0L && bb.getLong(p + 8) == 0L) break
-                            val at = prefixes.binarySearch(pre)
-                            if (at >= 0) {
-                                val i = byPrefix[at]
-                                if ((0 until 16).all { data[p + it] == entries.keys[i * 16 + it] }) synchronized(archiveOf) {
-                                    archiveOf[i] = ai; sizeOf[i] = bb.getInt(p + 16); offsetOf[i] = bb.getInt(p + 20).toLong() and 0xFFFFFFFFL
-                                }
+                    for (p in WowArchiveIndex.entryOffsets(data)) {
+                        val pre = bb.getLong(p)
+                        val at = prefixes.binarySearch(pre)
+                        if (at >= 0) {
+                            val i = byPrefix[at]
+                            if ((0 until 16).all { data[p + it] == entries.keys[i * 16 + it] }) synchronized(archiveOf) {
+                                val size = bb.getInt(p + 16)
+                                check(size.toLong() == entries.sizes[i]) { "CDN archive size does not match the download manifest" }
+                                archiveOf[i] = ai; sizeOf[i] = size; offsetOf[i] = bb.getInt(p + 20).toLong() and 0xFFFFFFFFL
                             }
-                            p += 24
                         }
-                        block += 4096
                     }
                 }
             }.forEach { it.get() }
