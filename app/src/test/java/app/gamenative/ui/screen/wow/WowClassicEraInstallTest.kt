@@ -21,6 +21,15 @@ import java.security.MessageDigest
  * without a PC. The fake CDN serves the real download path (configs, install and encoding manifests, archive index).
  */
 class WowClassicEraInstallTest {
+    @Test fun aForeverUpdateCannotWriteIntoAnEraInstall() {
+        val root = temp.newFolder()
+        val target = WowClientDownloader.VersionCheckResult("", "1.60.1", true,
+            remoteBuildConfig = "a".repeat(32), product = "wowf")
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            WowClientDownloader.updateGame(root, target, {})
+        }
+        assertTrue(root.listFiles().isNullOrEmpty())
+    }
     @get:Rule val temp = TemporaryFolder()
     private fun md5(b: ByteArray) = MessageDigest.getInstance("MD5").digest(b).joinToString("") { "%02x".format(it.toInt() and 255) }
     private fun unhex(s: String) = s.chunked(2).map { it.toInt(16).toByte() }.toByteArray()

@@ -49,7 +49,7 @@ object WowClientDownloader {
         val remoteCdnServers: List<String> = emptyList(),
     )
 
-    /** Products listed in [buildInfo] (both the beta and the full release after an in-place upgrade). */
+    /** Products listed in a potentially shared Battle.net installation. */
     fun installedProducts(buildInfo: File): Set<String> = runCatching {
         val lines = buildInfo.readLines().filter { it.isNotBlank() }
         val header = lines.first().split("|").map { it.substringBefore("!") }

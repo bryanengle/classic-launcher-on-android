@@ -91,7 +91,7 @@ class WowVoiceRepairCdnTest {
             val config = File(client, "WTF/Config.wtf").apply { parentFile!!.mkdirs(); writeText("keep graphics") }
             val info = File(root, ".build.info").apply {
                 writeText("Product|Active|Version|Build Key|CDN Key|CDN Hosts|CDN Path\n" +
-                    "wowf|1|installed-version|$build|$cdn|127.0.0.1:${server.port}|tpr/wow\n")
+                    "wow_classic_era|1|installed-version|$build|$cdn|127.0.0.1:${server.port}|tpr/wow\n")
             }
             val originalInfo = info.readBytes()
             val statuses = mutableListOf<String>()
@@ -120,7 +120,7 @@ class WowVoiceRepairCdnTest {
             val root = temp.newFolder(); File(root, "_classic_era_").mkdirs()
             val key = md5("the real config".toByteArray())
             File(root, ".build.info").writeText("Product|Active|Version|Build Key|CDN Key|CDN Hosts|CDN Path\n" +
-                "wowf|1|v|$key|$key|127.0.0.1:${server.port}|tpr/wow\n")
+                "wow_classic_era|1|v|$key|$key|127.0.0.1:${server.port}|tpr/wow\n")
             val error = assertThrows(java.io.IOException::class.java) { WowClientDownloader.repairVoiceFiles(root, {}, { false }) }
             assertTrue(error.message!!.contains("checksum", ignoreCase = true))
             assertFalse(File(root, "_classic_era_/Utils").exists())
