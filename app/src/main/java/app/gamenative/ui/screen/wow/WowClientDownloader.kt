@@ -657,6 +657,13 @@ object WowClientDownloader {
         private val tryHosts: List<String> =
             (if (hosts.any { it.substringBefore(':') in LOOPBACK_HOSTS }) hosts else listOfNotNull(regionalCdn(region)) + hosts).distinct()
 
+        // Never trust a CDN Content-Length enough to allocate an entire archive on Android.
+        private val maxBufferedBytes = 128L * 1024 * 1024
+
+        private fun checkBufferedSize(size: Long) {
+            if (size > maxBufferedBytes) throw IOException("CDN response is too large to buffer ($size bytes); use a bounded archive range")
+        }
+
         fun require(kind: String, key: String) = fetch(kind, key) ?: throw IOException("CDN is missing $kind/$key")
 
         /** Config files are named after their own MD5: a mismatch means a corrupted or substituted file. */
@@ -698,6 +705,7 @@ object WowClientDownloader {
          */
         fun fetchFast(kind: String, key: String, range: LongRange?, onSize: (Long) -> Unit = {}, onBytes: ((Long) -> Unit)? = null): ByteArray? {
             val total = if (range != null) range.last - range.first + 1 else head(kind, key) ?: return null
+            checkBufferedSize(total)
             if (total >= 0) onSize(total)
             if (total < SEGMENT_BYTES * 2 || total > Int.MAX_VALUE) return fetch(kind, key, range, onBytes)
             val start = range?.first ?: 0L
@@ -737,19 +745,43 @@ object WowClientDownloader {
                 try {
                     Net.http.newCall(request).execute().use { response ->
                         when {
-                            response.isSuccessful -> return if (onBytes == null) response.body!!.bytes() else {
-                                val body = response.body!!
-                                val out = ByteArrayOutputStream(body.contentLength().takeIf { it in 0..Int.MAX_VALUE }?.toInt() ?: 65536)
+                            response.isSuccessful -> {
+                                val body = response.body ?: throw IOException("Empty CDN response")
+                                val length = range?.let { it.last - it.first + 1 } ?: body.contentLength()
+                                if (range != null && (range.first < 0 || length <= 0)) throw IOException("Invalid CDN range")
+                                checkBufferedSize(length)
+                                // Some CDN edges ignore Range and return HTTP 200 plus the complete GB-sized archive.
+                                // Skip through that stream with a fixed buffer, then read only the requested slice.
+                                if (range != null && response.code == 206) {
+                                    response.header("Content-Range")?.let { value ->
+                                        val expected = "bytes ${range.first}-${range.last}/"
+                                        if (!value.startsWith(expected)) throw IOException("Wrong CDN Content-Range: $value")
+                                    }
+                                    if (body.contentLength() >= 0 && body.contentLength() != length)
+                                        throw IOException("Truncated or oversized CDN range")
+                                }
+                                val out = ByteArrayOutputStream(minOf(length.coerceAtLeast(0), 65536).toInt())
                                 val buffer = ByteArray(64 * 1024)
                                 body.byteStream().use { input ->
-                                    while (true) {
-                                        val n = input.read(buffer)
-                                        if (n < 0) break
-                                        out.write(buffer, 0, n)
-                                        onBytes(n.toLong())
+                                    var skip = if (range != null && response.code == 200) range.first else 0L
+                                    while (skip > 0) {
+                                        val n = input.read(buffer, 0, minOf(skip, buffer.size.toLong()).toInt())
+                                        if (n < 0) throw IOException("CDN response ends before requested range")
+                                        skip -= n
+                                        onBytes?.invoke(n.toLong())
                                     }
+                                    var remaining = if (length >= 0) length else maxBufferedBytes + 1
+                                    while (remaining > 0) {
+                                        val n = input.read(buffer, 0, minOf(remaining, buffer.size.toLong()).toInt())
+                                        if (n < 0) break
+                                        checkBufferedSize(out.size().toLong() + n)
+                                        out.write(buffer, 0, n)
+                                        remaining -= n
+                                        onBytes?.invoke(n.toLong())
+                                    }
+                                    if (length >= 0 && remaining != 0L) throw IOException("Truncated CDN response")
                                 }
-                                out.toByteArray()
+                                return out.toByteArray()
                             }
                             response.code == 403 || response.code == 404 -> missing = true
                             else -> failure = IOException("HTTP ${response.code} from $host")

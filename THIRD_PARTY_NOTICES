@@ -135,3 +135,7 @@ unofficial launcher and is not affiliated with or endorsed by Blizzard. The app 
 our own artwork. No Blizzard game files are part of this repository or its
 releases; the app downloads the Windows ARM64 client from Blizzard's CDN for the
 user's own installation.
+
+ConsolePort 3.3.13 — Copyright (c) 2022 Sebastian Lindfors
+Artistic License 2.0. Unmodified release, including original license at ConsolePort/LICENSE.md.
+https://github.com/seblindfors/ConsolePort/releases/tag/3.3.13

@@ -87,3 +87,7 @@ base, our changes and the build steps. `tools/package_runtime_sources.py` makes 
 - `libwowexec.so`, the exec/W^X shim of the Wine processes, is built from `app/src/main/cpp/wowexec/wow_exec.c` in this
   repository (GPL-3.0). GameNative's closed `libredirect.so` is not shipped.
 - The DX12 driver probe `wow-driver-probe.exe` is built from `tools/diagnostics/wow-driver-probe.c` in this repository.
+
+## Bundled ConsolePort controller addon
+
+ConsolePort 3.3.13 by Sebastian Lindfors is included unmodified under the Artistic License 2.0. Source and release: https://github.com/seblindfors/ConsolePort/tree/3.3.13 and https://github.com/seblindfors/ConsolePort/releases/tag/3.3.13. Its license and copyright notices remain in the ZIP (`ConsolePort/LICENSE.md`). The build script pins the release ZIP SHA-256; no Blizzard game files are bundled.

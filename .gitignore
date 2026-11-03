@@ -79,3 +79,6 @@ WowB-ARM64/
 docs/
 
 /app/src/main/assets/bundled_components/Turnip_v26.0.0_R8.zip
+
+# Verified controller addon fetched at build time
+app/src/main/assets/bundled_addons/

@@ -384,7 +384,13 @@ private fun WoWForeverScreenContent(
 
         launchJob = scope.launch(Dispatchers.IO) {
             var handedOff = false
+            var addonWriteClaimed = false
             try {
+                withContext(Dispatchers.Main) {
+                    check(WowAddonJobs.running == 0) { "An addon operation is still running. Try Play again when it finishes." }
+                    WowAddonJobs.begin("Preparing controller addon..." to "Kontroller addon előkészítése...")
+                    addonWriteClaimed = true
+                }
                 // Exit does not wait for the last session's wineserver any more: it saves its registry in the background first.
                 check(PluviaApp.awaitTeardown(30_000)) {
                     t("The previous game session is still closing. Try again in a moment.", "Az előző játékmenet még záródik. Próbáld újra egy pillanat múlva.")
@@ -464,6 +470,8 @@ private fun WoWForeverScreenContent(
                 }
 
 
+                WowDefaultAddons.install(File(gamePath)) { context.assets.open(WowDefaultAddons.ASSET) }
+
                 if (!isActive) return@launch
                 WowDiagnostics.lifecycle(context,"launcher.navigate_xserver")
                 withContext(Dispatchers.Main) {
@@ -480,6 +488,8 @@ private fun WoWForeverScreenContent(
                     statusText = t("Launch failed", "Az indítás nem sikerült")
                     isLaunching = false
                 }
+            } finally {
+                if (addonWriteClaimed) withContext(kotlinx.coroutines.NonCancellable + Dispatchers.Main) { WowAddonJobs.end() }
             }
         }
     }

@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Downloads the whole game data (the build's download manifest for Windows ARM64 + the game language + region) straight into
- * WoW's local storage, before the game runs: CDN archive pieces of up to 8 MB, 8 at a time, from Blizzard's own regional CDN.
+ * WoW's local storage, before the game runs: CDN archive pieces of up to 8 MB, 4 at a time, from Blizzard's own regional CDN.
  * The game streams the same files itself while it runs, but only what it is about to show, at about 2 MB/s on the phone; this
  * runs at the line's speed (15-18 MB/s measured on LTE from eu.cdn.blizzard.com). Priority 0 first (what the game needs to
  * start), then 1, then 2. Files the storage already has are skipped, so a stopped download continues where it was.
@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference
 internal object WowGameDataDownloader {
     data class Progress(val done: Long, val total: Long, val bytesPerSecond: Double, val preparing: Boolean)
 
-    private const val THREADS = 8
+    private const val THREADS = 4
     private const val RANGE_MAX = 8L * 1024 * 1024
     private const val GAP_MAX = 256L * 1024
     private const val CHECKPOINT_BYTES = 512L * 1024 * 1024

@@ -47,9 +47,9 @@ android {
 
         manifestPlaceholders["screenOrientation"] = "unspecified"
 
-        versionCode = 1025
+        versionCode = 1026
         // One number per change round (1.0.1, 1.0.2, ...): the APK version, the archive version and the notes use the same value.
-        versionName = "0.1.0-classic-era-test"
+        versionName = "0.1.1-classic-era-test"
         manifestPlaceholders["appLabel"] = "Classic Era Test"
 
         val iconValue = "@mipmap/ic_package_042"
