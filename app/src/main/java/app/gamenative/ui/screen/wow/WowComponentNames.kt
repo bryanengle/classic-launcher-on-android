@@ -15,6 +15,7 @@ object WowComponentNames {
     @JvmStatic
     fun display(id: String): String {
         val name = id.trim()
+        if (name == WowBundledComponents.DRIVER_NAME) return "Turnip 26.0.0 R8"
         dxvk.matchEntire(name)?.let { return "DXVK ${it.groupValues[1]}" }
         proton.matchEntire(name)?.let { return "Proton ${it.groupValues[1]} ARM64EC" }
         vkd3d.matchEntire(name)?.let { return "VKD3D ${it.groupValues[1]}" }
@@ -32,6 +33,7 @@ object WowComponentNames {
         if (code == "hu" || code == "en") describe(id, original, code == "hu") else WowI18n.translate(code, describe(id, original, false))
 
     private fun describe(id: String, original: String, hungarian: Boolean): String = when (display(id)) {
+        "Turnip 26.0.0 R8" -> "Mesa Turnip Vulkan driver for the Pocket 6 Adreno 740. Experimental Classic Era build."
         "DXVK 3.1.1" -> if (hungarian) "DXVK 3.1.1 a DirectX 11-hez, Adrenóra hangolva. Ez a beépített és alapértelmezett."
             else "DXVK 3.1.1 for DirectX 11, tuned for Adreno. The bundled default."
         "DXVK 2.7.3" -> if (hungarian) "DXVK 2.7.3 a DirectX 11-hez. Régebbi változat, már nincs beépítve."
@@ -44,5 +46,5 @@ object WowComponentNames {
 
     /** True for the display names of the bundled components (their package descriptions are not shown). */
     @JvmStatic
-    fun isBundled(displayName: String): Boolean = displayName in setOf("DXVK 2.7.3", "DXVK 3.1.1", "Proton 11.0 ARM64EC", "VKD3D 3.0.1", "TurnRIP 1.0")
+    fun isBundled(displayName: String): Boolean = displayName in setOf("DXVK 2.7.3", "DXVK 3.1.1", "Proton 11.0 ARM64EC", "VKD3D 3.0.1", "TurnRIP 1.0", "Turnip 26.0.0 R8")
 }

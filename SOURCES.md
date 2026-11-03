@@ -1,5 +1,19 @@
 # Sources of the bundled runtime components
 
+## Classic Era fork (2026-11-03)
+
+This fork uses the unmodified runtime assets extracted from DeadmanDog's v1.0.0 APK,
+except that the A840 TurnRIP package is replaced with the standard
+[`Turnip_v26.0.0_R8.zip`](https://github.com/K11MCH1/AdrenoToolsDrivers/releases/tag/v26.0.0-rc08)
+from K11MCH1. That release identifies Mesa base commit `e9a83d530cce` and its applied
+patches. Mesa's licenses and notices apply; the package is unmodified.
+Use `python3 tools/fetch_classic_components.py` for this fork's pinned assets.
+
+The remaining sections below are the original upstream source inventory. “Our changes”
+refers to DeadmanDog's work, and requests for its custom runtime source archives go to
+[DeadmanDog/forever-launcher-on-android](https://github.com/DeadmanDog/forever-launcher-on-android),
+not this fork. The TurnRIP section documents the original driver, which this fork does not bundle.
+
 The app itself is fully in this repository (GPL-3.0). The runtime packages it bundles are large binaries, so they are not in git:
 `tools/fetch_components.sh <folder>` copies them from a folder and checks them against `tools/components.sha256`.
 

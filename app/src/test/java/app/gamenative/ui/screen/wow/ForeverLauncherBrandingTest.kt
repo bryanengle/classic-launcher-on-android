@@ -61,7 +61,7 @@ class ForeverLauncherBrandingTest {
     }
 
     @Test fun packageAndOwnArtwork() {
-        assertTrue(BuildConfig.APPLICATION_ID, BuildConfig.APPLICATION_ID == "forever.launcher" || BuildConfig.APPLICATION_ID == "forever.launcher.beta")
+        assertEquals("com.bryanengle.classicera.launcher", BuildConfig.APPLICATION_ID)
         listOf(R.drawable.forever_logo, R.drawable.ic_stat_forever, R.drawable.ic_launcher_foreground, R.drawable.ic_launcher_background,
             R.drawable.ic_launcher_monochrome, R.mipmap.ic_launcher, R.mipmap.ic_launcher_round).forEach { assertNotNull(ContextCompat.getDrawable(context, it)) }
         val res = listOf(File("src/main/res"), File("app/src/main/res")).first { it.isDirectory }

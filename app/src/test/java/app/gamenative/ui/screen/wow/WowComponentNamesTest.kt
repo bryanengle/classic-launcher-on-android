@@ -10,7 +10,7 @@ class WowComponentNamesTest {
         assertEquals("DXVK 2.7.3", WowComponentNames.display("dxvk-Vegas-2.7.3-wow-arm64-hybrid-gamenative-r51-51"))
         assertEquals("VKD3D 3.0.1", WowComponentNames.display(WowBundledComponents.VKD3D_NAME))
         assertEquals("VKD3D 3.0.1", WowComponentNames.display("vkd3d-VKD3D-Proton-3.0.1-ARM64-r10-10"))
-        assertEquals("TurnRIP 1.0", WowComponentNames.display(WowBundledComponents.DRIVER_NAME))
+        assertEquals("Turnip 26.0.0 R8", WowComponentNames.display(WowBundledComponents.DRIVER_NAME))
         assertEquals("Proton 11.0 ARM64EC", WowComponentNames.display("proton-11.0-90639.31-arm64ec"))
         assertEquals("Proton 11.0 ARM64EC", WowComponentNames.display("proton-11.0-90639.31-arm64ec-31"))
         // Imported components keep their own names and descriptions.
