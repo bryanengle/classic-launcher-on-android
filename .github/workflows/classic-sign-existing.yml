@@ -1,0 +1,48 @@
+name: Sign verified Classic APK
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Classic Era test build run containing the APK
+        required: true
+        default: '41615214908'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  sign:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require a successful build from this repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ inputs.run_id }}
+        run: |
+          [[ "$SOURCE_RUN" =~ ^[0-9]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" > "$RUNNER_TEMP/source-run.json"
+          python3 -c 'import json,os; r=json.load(open(os.environ["RUNNER_TEMP"]+"/source-run.json")); assert r["conclusion"]=="success" and r["path"]==".github/workflows/classic-test.yml"'
+      - uses: actions/download-artifact@v4
+        with:
+          name: Classic-Era-RP6-test
+          path: verified-apk
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.run_id }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools build-tools;35.0.0'
+          log-accepted-android-sdk-licenses: false
+      - name: Sign verified APK
+        env:
+          CLASSIC_SIGNING_KEYSTORE: ${{ secrets.CLASSIC_SIGNING_KEYSTORE }}
+        run: bash tools/sign_classic_apk.sh verified-apk/app-modern-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Classic-Era-RP6-stable-signing
+          path: verified-apk/app-modern-debug.apk
+          if-no-files-found: error

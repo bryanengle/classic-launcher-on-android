@@ -28,6 +28,10 @@ jobs:
         run: ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx4g :app:assembleModernDebug
       - name: Run unit tests
         run: ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx4g :app:testModernDebugUnitTest
+      - name: Sign with persistent Classic identity
+        env:
+          CLASSIC_SIGNING_KEYSTORE: ${{ secrets.CLASSIC_SIGNING_KEYSTORE }}
+        run: bash tools/sign_classic_apk.sh app/build/outputs/apk/modern/debug/app-modern-debug.apk
       - name: Verify APK signature and package
         run: |
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose app/build/outputs/apk/modern/debug/app-modern-debug.apk

@@ -43,7 +43,7 @@ python3 tools/verify_bundled_runtime_versions.py
 
 The preparation script extracts runtime assets from the pinned upstream v1.0.0 APK and downloads the standard R8 driver and ConsolePort 3.3.13. The addon ZIP is checked against its pinned SHA-256 at build time and before installation. It checks the APK SHA-256 and every extracted/downloaded runtime asset. Optional `--apk`, `--driver` and `--addon` arguments allow already downloaded files. The game itself downloads from Blizzard at runtime.
 
-The **Classic Era test build** GitHub Actions workflow runs the build and unit tests and uploads an APK only when both succeed. Test APKs use a development signing key. Builds made with different keys cannot update one another.
+The **Classic Era test build** GitHub Actions workflow runs the build and unit tests and uploads an APK only when both succeed. CI APKs use a persistent test signing key stored in the encrypted `CLASSIC_SIGNING_KEYSTORE` repository secret. Its public certificate fingerprint is pinned in `tools/classic-signing-cert.sha256`; signing fails if the secret is missing or the identity changes. Local Gradle builds still use their local debug key. The original v0.1.0 and first v0.1.1 APKs used ephemeral keys and need one launcher reinstall to migrate; keep the shared game folder and back up launcher data first.
 
 ## Credits and licenses
 
