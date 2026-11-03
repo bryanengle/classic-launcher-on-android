@@ -228,7 +228,7 @@ class WowVkd3dTest {
         assertThrows(IllegalArgumentException::class.java) { WowVkd3dComponents.arguments("", "invalid") }
     }
     @Test fun cachedGameGraphicsAndFsrPersistThroughDx12ThenDx11() {
-        val root = temp.newFolder(); val config = File(root, "_forever_/WTF/Config.wtf").apply { parentFile.mkdirs() }
+        val root = temp.newFolder(); val config = File(root, "_classic_era_/WTF/Config.wtf").apply { parentFile.mkdirs() }
         config.writeText("SET gxApi \"D3D11\"\nSET RenderScale \"0.75\"\nSET ResampleQuality \"3\"\nSET uiScale \"0.65\"\n")
         WowGameConfig.prepare(root, "1344x608", "D3D12")
         assertTrue(config.readText().contains("SET gxApi \"D3D12\""))

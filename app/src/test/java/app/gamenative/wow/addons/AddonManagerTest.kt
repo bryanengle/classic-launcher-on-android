@@ -91,6 +91,36 @@ class AddonManagerTest {
     private fun manager(vararg providers: AddonProvider = arrayOf(siteA, siteB)) =
         AddonManager(addonsDir, db, providers.toList(), OkHttpClient())
 
+    @Test
+    fun classicTargetInstallsClassicEvenWhenForeverIsAvailable() = runBlocking {
+        val classicUrl = serveAddon("Era", "## Interface: 11509\n## Title: Era\n")
+        val foreverUrl = serveAddon("Forever")
+        val addon = remote("site-a", "both", "Both", latest = mapOf(
+            AddonFlavor.CLASSIC to file("era", classicUrl),
+            AddonFlavor.FOREVER to file("forever", foreverUrl),
+        ))
+        siteA.addons = listOf(addon)
+        val era = AddonManager(addonsDir, db, listOf(siteA), OkHttpClient(), AddonFlavor.CLASSIC)
+        assertEquals(AddonFlavor.CLASSIC, era.popular().single().bestFlavor)
+        assertEquals(AddonFlavor.CLASSIC, era.install(addon).flavor)
+        assertFalse(File(addonsDir, "Forever").exists())
+        assertTrue(era.checkUpdates().isEmpty())
+    }
+
+    @Test
+    fun classicTargetRejectsForeverOnlyAndUnlabelledArchives() = runBlocking {
+        val addon = remote("site-a", "forever", "Forever", latest = mapOf(
+            AddonFlavor.FOREVER to file("forever", serveAddon("Forever")),
+        ))
+        siteA.addons = listOf(addon)
+        val era = AddonManager(addonsDir, db, listOf(siteA), OkHttpClient(), AddonFlavor.CLASSIC)
+        assertTrue(era.popular().isEmpty())
+        assertThrows(IOException::class.java) { runBlocking { era.install(addon) } }
+        assertThrows(IOException::class.java) { runBlocking { era.installFromUrl(serveAddon("Unknown")) } }
+        assertFalse(File(addonsDir, "Forever").exists())
+        assertFalse(File(addonsDir, "Unknown").exists())
+    }
+
     /** Serves a zip with one addon folder and returns its URL. */
     private fun serveAddon(folder: String, toc: String = "## Interface: 16001\n## Title: $folder\n"): String {
         zips["/zips/$folder.zip"] = TestZips.addon(folder, toc)

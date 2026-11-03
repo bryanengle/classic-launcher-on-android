@@ -21,7 +21,7 @@ internal object WowCacheCleaner {
 
     fun plan(container: Container, appCache: File): Plan {
         val game = WowLaunchEnvironment.gameDirectory(container).host
-        require(game.name == "_forever_") { "Expected the WoW _forever_ executable directory." }
+        require(game.name == WowClientDownloader.FLAVOR_DIR) { "Expected the WoW Classic Era executable directory." }
         val env = EnvVars(container.envVars)
         val defaultsInGame = WowLaunchEnvironment.location(container) == WowLaunchEnvironment.GAME_DIRECTORY
         val runtimeCache = File(container.rootDir, ".cache")

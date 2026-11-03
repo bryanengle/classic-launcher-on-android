@@ -80,7 +80,7 @@ internal object WowAddonJobs {
 
 /**
  * Addon manager behind the launcher (swipe left from the home page). Sources: GitHub releases and WoWInterface, merged into one
- * list; only addons with a WoW Forever file are offered (the addon backend is from WoWForeverywhere, GPL-3.0).
+ * list; only addons with a WoW Classic Era file are offered (the addon backend is from WoWForeverywhere, GPL-3.0).
  */
 internal class WowAddonsController(gameRoot: File, private val scope: CoroutineScope) {
     enum class Mode { INSTALLED, BROWSE }
@@ -91,6 +91,7 @@ internal class WowAddonsController(gameRoot: File, private val scope: CoroutineS
         db = AddonDb.forAddonsDir(addonsDir),
         providers = listOf(WowInterfaceProvider(), GitHubProvider()),
         http = Net.http,
+        targetFlavor = AddonFlavor.CLASSIC,
     )
 
     var mode by mutableStateOf(Mode.INSTALLED); private set
@@ -137,11 +138,11 @@ internal class WowAddonsController(gameRoot: File, private val scope: CoroutineS
             loading = true
             try {
                 val found = withContext(Dispatchers.IO) {
-                    if (query.isBlank()) manager.popularOutcome(includeClassic = false) else manager.searchOutcome(query, includeClassic = false)
+                    if (query.isBlank()) manager.popularOutcome(includeClassic = true) else manager.searchOutcome(query, includeClassic = true)
                 }
                 unreachable = found.noSourceReachable
-                // Only what WoW Forever loads: a file made for Forever (Classic-only and unknown builds are left out).
-                listings = found.listings.filter { it.bestFlavor == AddonFlavor.FOREVER }
+                // Only what WoW Classic Era loads: a file made for Forever (Classic-only and unknown builds are left out).
+                listings = found.listings.filter { it.bestFlavor == AddonFlavor.CLASSIC }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -156,7 +157,7 @@ internal class WowAddonsController(gameRoot: File, private val scope: CoroutineS
     fun install(l: AddonListing) = act("Installing ${l.remote.name}" to "${l.remote.name} telepítése") { manager.install(l.remote) }
     fun update(l: AddonListing) = act("Updating ${l.remote.name}" to "${l.remote.name} frissítése") {
         val record = l.installed ?: return@act
-        if (record.flavor == AddonFlavor.CLASSIC && l.bestFlavor == AddonFlavor.FOREVER) manager.install(l.remote) else manager.update(record)
+        manager.update(record)
     }
     fun remove(record: InstalledAddon) = act("Removing ${record.name}" to "${record.name} eltávolítása") { manager.remove(record) }
     fun updateAll() = act("Updating all addons" to "Minden addon frissítése") { manager.updateAll() }
@@ -215,7 +216,7 @@ internal fun WowAddonsPage(onBack: () -> Unit) {
                 Column {
                     Text(tx("ADDONS", "ADDONOK"), fontSize = 22.sp, fontWeight = FontWeight.Black,
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Serif, letterSpacing = 5.sp, color = WowUi.Gold)
-                    Text(tx("Only addons made for WoW Forever.", "Csak a WoW Forever-hez készült addonok."),
+                    Text(tx("Only addons made for WoW Classic Era.", "Csak a WoW Classic Era-hez készült addonok."),
                         color = WowUi.Muted, fontSize = 12.sp)
                 }
                 if (!ready) {
@@ -251,7 +252,7 @@ internal fun WowAddonsPage(onBack: () -> Unit) {
                     c.listings.isEmpty() -> Text(
                         if (c.mode == WowAddonsController.Mode.INSTALLED) tx("No addons installed yet. Open Browse to find some.",
                             "Még nincs telepített addon. A Böngészés fülön kereshetsz.")
-                        else tx("Nothing found for WoW Forever.", "Nincs találat a WoW Forever-hez."),
+                        else tx("Nothing found for WoW Classic Era.", "Nincs találat a WoW Classic Era-hez."),
                         color = WowUi.Muted)
                     else -> LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(c.listings, key = { "${it.remote.provider}:${it.remote.projectId}:${it.installed?.id}" }) { l ->
@@ -312,7 +313,7 @@ private fun AddonRow(l: AddonListing, busy: Boolean, onInstall: () -> Unit, onUp
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(l.remote.name.trim(), color = WowUi.Cream, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                val version = l.installed?.version ?: l.remote.latest[AddonFlavor.FOREVER]?.version
+                val version = l.installed?.version ?: l.remote.latest[AddonFlavor.CLASSIC]?.version
                 Text(listOfNotNull(l.remote.author.takeIf { it.isNotBlank() }, version).joinToString(" · "),
                     color = WowUi.Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (l.remote.summary.isNotBlank()) Text(l.remote.summary, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)

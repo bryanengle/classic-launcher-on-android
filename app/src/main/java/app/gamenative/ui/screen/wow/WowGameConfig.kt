@@ -15,13 +15,13 @@ internal object WowGameConfig {
         flavorDir.mkdirs()
         val flavorInfo = File(flavorDir, ".flavor.info")
         if (!flavorInfo.exists()) {
-            flavorInfo.writeText("Product Flavor!STRING:0\nwowf\n")
+            flavorInfo.writeText("Product Flavor!STRING:0\n${WowClientDownloader.TARGET_PRODUCT}\n")
         }
         val configWtf = File(flavorDir, "WTF/Config.wtf")
         val defaults = linkedMapOf(
             // Without the Battle.net app the portal comes from here; a missing one stops WoW at a region picker.
             "portal" to "\"${region ?: WowClientDownloader.region(root)}\"",
-            "agentUID" to "\"wowf\"",
+            "agentUID" to "\"${WowClientDownloader.TARGET_PRODUCT}\"",
             "gxApi" to "\"$graphicsApi\"",
             "textLocale" to "\"${locale ?: "enUS"}\"",
             "audioLocale" to "\"${locale ?: "enUS"}\"",
@@ -52,14 +52,6 @@ internal object WowGameConfig {
             "GamePadEnable" to "\"1\"",
             "InputDeviceInterfaceStyle" to "\"1\""
         )
-        // An install upgraded from the Classic beta keeps the player's settings; the beta's portal, agent and caches stay behind.
-        val betaConfig = File(root, "${WowClientDownloader.LEGACY_FLAVOR_DIR}/WTF/Config.wtf")
-        if (!configWtf.exists() && betaConfig.isFile) {
-            val left = listOf("SET portal ", "SET agentUID ", "SET CACHE-")
-            val carried = betaConfig.readLines().filter { line -> left.none { line.trimStart().startsWith(it, ignoreCase = true) } }
-            configWtf.parentFile?.mkdirs()
-            writeAtomically(configWtf, carried.joinToString("\n", postfix = "\n"))
-        }
         if (!configWtf.exists()) {
             configWtf.parentFile?.mkdirs()
             writeAtomically(configWtf, defaults.entries.joinToString("\n") { "SET ${it.key} ${it.value}" } + "\n")

@@ -387,34 +387,34 @@ class WowLaunchEnvironmentTest {
     @Test fun `host directory uses executable subdirectory and the correct mapping among multiple drives`() {
         val c=container()
         val directory=WowLaunchEnvironment.gameDirectory(c)
-        assertEquals(File("/games/wow/_forever_").canonicalFile,directory.host)
-        assertEquals("G:\\_forever_",directory.windows)
-        assertEquals("G:\\_forever_\\Wow-ARM64.exe",c.executablePath)
+        assertEquals(File("/games/wow/_classic_era_").canonicalFile,directory.host)
+        assertEquals("G:\\_classic_era_",directory.windows)
+        assertEquals("G:\\_classic_era_\\WowClassic-arm64.exe",c.executablePath)
     }
     @Test fun `resolver accepts root exe and lowercase drive with slash separators`() {
-        val c=container().apply { executablePath="g:/Wow-ARM64.exe" }
+        val c=container().apply { executablePath="g:/WowClassic-arm64.exe" }
         assertEquals(File("/games/wow"),WowLaunchEnvironment.gameDirectory(c).host)
         assertEquals("G:\\",WowLaunchEnvironment.gameDirectory(c).windows)
     }
     @Test fun `unmapped relative and traversing executable paths are rejected`() {
         val c=container()
-        for (bad in listOf("X:\\Wow-ARM64.exe","Wow-ARM64.exe","G:\\..\\Wow-ARM64.exe")) {
+        for (bad in listOf("X:\\WowClassic-arm64.exe","WowClassic-arm64.exe","G:\\..\\WowClassic-arm64.exe")) {
             c.executablePath=bad
             assertThrows(Exception::class.java) { WowLaunchEnvironment.gameDirectory(c) }
         }
-        c.executablePath="G:\\Wow-ARM64.exe";c.drives="G:relative"
+        c.executablePath="G:\\WowClassic-arm64.exe";c.drives="G:relative"
         assertThrows(IllegalArgumentException::class.java) { WowLaunchEnvironment.gameDirectory(c) }
     }
     @Test fun `supported DXVK cache variables target mapped game directory and Mesa uses host directory`() {
         val env=WowLaunchEnvironment.defaults(container(),setOf("DXVK_STATE_CACHE_PATH","DXVK_SHADER_CACHE_PATH"))
-        assertEquals("G:\\_forever_",env.get("DXVK_STATE_CACHE_PATH"))
-        assertEquals("G:\\_forever_",env.get("DXVK_SHADER_CACHE_PATH"))
-        assertEquals("/games/wow/_forever_",env.get("MESA_SHADER_CACHE_DIR"))
+        assertEquals("G:\\_classic_era_",env.get("DXVK_STATE_CACHE_PATH"))
+        assertEquals("G:\\_classic_era_",env.get("DXVK_SHADER_CACHE_PATH"))
+        assertEquals("/games/wow/_classic_era_",env.get("MESA_SHADER_CACHE_DIR"))
         assertFalse(env.toString().contains("GameNativeCache"))
     }
     @Test fun `game location change recomputes cache paths without stale saved automatic env`() {
         val c=container();val before=WowLaunchEnvironment.defaults(c,setOf("DXVK_SHADER_CACHE_PATH"))
-        c.drives="G:/new/game";c.executablePath="G:\\beta2\\Wow-ARM64.exe"
+        c.drives="G:/new/game";c.executablePath="G:\\beta2\\WowClassic-arm64.exe"
         val after=WowLaunchEnvironment.defaults(c,setOf("DXVK_SHADER_CACHE_PATH"))
         assertNotEquals(before.get("MESA_SHADER_CACHE_DIR"),after.get("MESA_SHADER_CACHE_DIR"))
         assertEquals("/new/game/beta2",after.get("MESA_SHADER_CACHE_DIR"))
@@ -433,14 +433,14 @@ class WowLaunchEnvironmentTest {
         c.envVars="DXVK_STATE_CACHE_PATH=custom-state"
         val env=EnvVars("DXVK_STATE_CACHE_PATH=legacy-default")
         WowLaunchEnvironment.apply(context,c,ContentsManager(context).apply { syncContents() },env)
-        assertEquals("G:\\_forever_",env.get("DXVK_SHADER_CACHE_PATH"))
+        assertEquals("G:\\_classic_era_",env.get("DXVK_SHADER_CACHE_PATH"))
         assertEquals("custom-state",env.get("DXVK_STATE_CACHE_PATH"))
     }
     @Test fun `selected legacy build only gets state path and a changed payload invalidates capability cache`() {
         val c=container();val dll=installDxvk(c,listOf("DXVK_STATE_CACHE_PATH"))
         val manager=ContentsManager(context).apply { syncContents() }
         val env=EnvVars();WowLaunchEnvironment.apply(context,c,manager,env)
-        assertEquals("G:\\_forever_",env.get("DXVK_STATE_CACHE_PATH"));assertFalse(env.has("DXVK_SHADER_CACHE_PATH"))
+        assertEquals("G:\\_classic_era_",env.get("DXVK_STATE_CACHE_PATH"));assertFalse(env.has("DXVK_SHADER_CACHE_PATH"))
         dll.writeBytes("different payload DXVK_SHADER_CACHE_PATH\u0000".toByteArray())
         assertEquals(setOf("DXVK_SHADER_CACHE_PATH"),WowLaunchEnvironment.supportedDxvkCacheVariables(listOf(dll)))
     }

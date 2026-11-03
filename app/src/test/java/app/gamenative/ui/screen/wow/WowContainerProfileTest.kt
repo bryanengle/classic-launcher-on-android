@@ -31,14 +31,14 @@ class WowContainerProfileTest {
         val container = Container(WowContainerProfile.CONTAINER_ID).apply { loadData(config) }
         assertEquals(WowBundledComponents.DXVK_ID, container.getDXWrapper())
         assertEquals(WowBundledComponents.PROTON_ID, container.wineVersion)
-        assertEquals("G:\\_forever_\\Wow-ARM64.exe", container.executablePath)
+        assertEquals("G:\\_classic_era_\\WowClassic-arm64.exe", container.executablePath)
     }
 
     @Test
     fun newContainerUsesTheCurrentBundledStack() {
         val config = WowContainerProfile.defaultsForNewContainer(oldPath, false, false)
         val container = Container(WowContainerProfile.CONTAINER_ID).apply { loadData(config) }
-        assertEquals("WoW Forever", container.name)
+        assertEquals("WoW Classic Era", container.name)
         assertEquals(WowBundledComponents.PROTON_ID, container.wineVersion)
         assertEquals(WowBundledComponents.DXVK_ID, container.getDXWrapper())
         assertEquals("version=${WowBundledComponents.DXVK_VERSION}", container.getDXWrapperConfig())
@@ -46,9 +46,9 @@ class WowContainerProfileTest {
         assertEquals(WowBundledComponents.DRIVER_NAME, container.graphicsDriverVersion)
         assertEquals("version=${WowBundledComponents.DRIVER_NAME},adrenotoolsTurnip=1,resourceType=buffer,bcnEmulation=auto,quality=high", container.graphicsDriverConfig)
         assertEquals("vulkan", container.displayRenderer)
-        assertEquals("1920x1080", container.screenSize)
+        assertEquals("1280x720", container.screenSize)
         assertEquals(Container.BIONIC, container.containerVariant)
-        assertEquals("G:\\_forever_\\Wow-ARM64.exe", container.executablePath)
+        assertEquals("G:\\_classic_era_\\WowClassic-arm64.exe", container.executablePath)
         assertEquals("D:/storage/emulated/0/DownloadG:$oldPath", container.drives)
         assertEquals("-d3d11", container.execArgs)
         // v1.0.1: FEX is gone; a new container carries no FEX/emulator keys at all.
@@ -129,7 +129,7 @@ class WowContainerProfileTest {
             startupSelection = Container.STARTUP_SELECTION_NORMAL
             basePrefix = "/custom/runtime/base_prefix/.wine"
             containerVariant = "glibc"
-            executablePath = "G:\\_forever_\\WowB.exe"
+            executablePath = "G:\\_classic_era_\\WowB.exe"
             drives = "D:/custom/downloadsG:${oldPath}E:/custom/files"
             putExtra("customRuntimeMarker", "preserved")
         }
@@ -149,7 +149,7 @@ class WowContainerProfileTest {
             if (key !in owned) assertEquals("Preserve $key", before.get(key).toString(), after.get(key).toString())
         }
         assertEquals("D:/custom/downloadsG:$newPath" + "E:/custom/files", after.getString("drives"))
-        assertEquals("G:\\_forever_\\Wow-ARM64.exe", after.getString("executablePath"))
+        assertEquals("G:\\_classic_era_\\WowClassic-arm64.exe", after.getString("executablePath"))
         assertEquals(Container.BIONIC, after.getString("containerVariant"))
         assertEquals("pulseaudio", after.getString("audioDriver"))
         assertEquals("registry must remain untouched", prefixMarker.readText())

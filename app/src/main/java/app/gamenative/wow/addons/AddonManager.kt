@@ -54,6 +54,7 @@ class AddonManager(
     private val db: AddonDb,
     private val providers: List<AddonProvider>,
     private val http: OkHttpClient,
+    private val targetFlavor: AddonFlavor? = null,
 ) {
     private val lock = Mutex()
 
@@ -138,6 +139,7 @@ class AddonManager(
             val remote = github.get(repo) ?: throw IOException("no release found for $repo")
             return@withLock installLocked(remote, mutableSetOf())
         }
+        if (targetFlavor != null) throw IOException("Use a GitHub repository link with a Classic Era release; unlabelled ZIP files are not supported here.")
         val trimmed = url.trim()
         require(trimmed.startsWith("https://", ignoreCase = true) || trimmed.startsWith("http://", ignoreCase = true)) {
             "not a URL: $url"
@@ -175,9 +177,9 @@ class AddonManager(
 
     private fun merge(results: List<RemoteAddon>, records: List<InstalledAddon>): List<AddonListing> {
         val groups = LinkedHashMap<String, MutableList<RemoteAddon>>()
-        results.forEach { groups.getOrPut(mergeKey(it)) { mutableListOf() } += it }
+        results.filter { targetFlavor == null || targetFlavor in it.latest }.forEach { groups.getOrPut(mergeKey(it)) { mutableListOf() } += it }
         return groups.values.map { group ->
-            val primary = group.maxWith(compareBy<RemoteAddon>({ AddonFlavor.FOREVER in it.latest }, { it.downloads }))
+            val primary = group.maxWith(compareBy<RemoteAddon>({ (targetFlavor ?: AddonFlavor.FOREVER) in it.latest }, { it.downloads }))
             val installed = records.firstOrNull { record -> group.any { record.source.matches(it) } }
             AddonListing(
                 // Sources fill in for each other: one may list categories or screenshots another lacks.
@@ -194,7 +196,7 @@ class AddonManager(
                 sourceIds = group.associate { it.provider to it.projectId },
                 pages = (listOf(primary) + group).distinctBy { it.provider }.mapNotNull { r -> r.pageUrl()?.let { r.provider to it } }.toMap(),
             )
-        }.sortedWith(compareBy<AddonListing>({ it.bestFlavor != AddonFlavor.FOREVER }, { -it.remote.downloads }))
+        }.sortedWith(compareBy<AddonListing>({ it.bestFlavor != (targetFlavor ?: AddonFlavor.FOREVER) }, { -it.remote.downloads }))
     }
 
     /**
@@ -207,6 +209,7 @@ class AddonManager(
     private fun normalize(text: String): String = text.lowercase().filter { it.isLetterOrDigit() }
 
     private fun bestFlavor(group: List<RemoteAddon>): AddonFlavor = when {
+        targetFlavor != null -> targetFlavor
         group.any { AddonFlavor.FOREVER in it.latest } -> AddonFlavor.FOREVER
         group.any { AddonFlavor.CLASSIC in it.latest } -> AddonFlavor.CLASSIC
         else -> AddonFlavor.OTHER
@@ -225,14 +228,14 @@ class AddonManager(
             source.fileId != null -> best.fileId != source.fileId
             else -> installed.version == null || !best.version.contains(installed.version)
         }
-        val switchToForever = installed.flavor == AddonFlavor.CLASSIC &&
+        val switchToForever = targetFlavor == null && installed.flavor == AddonFlavor.CLASSIC &&
             group.any { it.latest[AddonFlavor.FOREVER]?.installable == true }
         return changed || switchToForever
     }
 
     /** Forever first, then a generic file, then Classic; installable files win within that order. */
     private fun bestFile(remote: RemoteAddon): Pair<AddonFlavor, RemoteFile>? {
-        val ordered = listOf(AddonFlavor.FOREVER, AddonFlavor.OTHER, AddonFlavor.CLASSIC)
+        val ordered = (targetFlavor?.let { listOf(it) } ?: listOf(AddonFlavor.FOREVER, AddonFlavor.OTHER, AddonFlavor.CLASSIC))
             .mapNotNull { flavor -> remote.latest[flavor]?.let { flavor to it } }
         return ordered.firstOrNull { it.second.installable } ?: ordered.firstOrNull()
     }

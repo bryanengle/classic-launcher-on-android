@@ -15,8 +15,8 @@ internal object WowBundledComponents {
     const val PROTON_NAME = "proton-11.0-90639.31-arm64ec"
     /** The only bundled/default DXVK: Vegas r63 on upstream 3.1.1, including the cache, bind-skip and pipeline-handle fixes. */
     const val DXVK_NAME = "Vegas-3.1.1-wow-arm64-hybrid-gamenative-r63"
-    /** The only bundled driver: TurnRIP 1.1.14 + community A8xx fixes (1.1.15) + 1.1.16 + 1.1.17 + 1.1.18 (A830 check) + 1.1.19 (wait-any mixed list, unsorted binding flags) + 1.1.20 (no diagnostic counter atomics without TU_STATS_FILE). */
-    const val DRIVER_NAME = "TurnRIP A840 Performance v1.1.20"
+    /** Standard Turnip build for the Retroid Pocket 6 Adreno 740; on-device validation pending. */
+    const val DRIVER_NAME = "Mesa Turnip driver v26.0.0 - R8"
     /** The only bundled VKD3D: r2 + one fallback pipeline compile per PSO (r3) + fence/query/OOM fixes (r4) + swapchain OOM/cleanup fixes (r5) + fallback variants compiled in parallel (r6) + disk-cache merge recovery, worker wait and short-write fixes (r7) + no busy retry when the worker cannot grow its queue (r8) + upstream WoW MSAA workaround (also for Wow-ARM64.exe / Wow-ARM64.exe), no CPU fence waits on the shared Turnip queue, racy fence signal order (r9) + depth/stencil barrier fusion, disjoint copy rectangles, sparse-fallback leak (r10). */
     const val VKD3D_NAME = "VKD3D-Proton-3.0.1-ARM64-r10"
     const val VKD3D_VERSION_CODE = 10
@@ -37,8 +37,8 @@ internal object WowBundledComponents {
         Bundle("Vegas-3.1.1-wow-arm64-hybrid-gamenative-r63.wcp", DXVK_NAME,
             "e2d75a833298943794055e17ead33cfc17c3d6fe0b84ee476972adb7f6195477", ContentProfile.ContentType.CONTENT_TYPE_DXVK,
             DXVK_VERSION_CODE),
-        Bundle("TurnRIP-A840-Performance-v1.1.20.zip", DRIVER_NAME,
-            "8b5745920baddcda3e66de048d39400c75105646e506c21c48c46b262db60cdc", null),
+        Bundle("Turnip_v26.0.0_R8.zip", DRIVER_NAME,
+            "e634db0f929e2205e95511c769071817d0390180ec72c8e690bc76375e813715", null),
     )
     val protectedNames = bundles.map { it.name }.toSet()
 

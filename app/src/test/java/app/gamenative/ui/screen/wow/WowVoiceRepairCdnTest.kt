@@ -57,7 +57,7 @@ class WowVoiceRepairCdnTest {
     }
     @Test fun repairUsesInstalledBuildAndArchivesWithoutUpdatingGameAndIsIdempotent() {
         val files = linkedMapOf("Utils\\WowVoiceProxyT.exe" to pe(false, 1), "Utils\\vivoxsdk.dll" to pe(true, 2),
-            "Utils\\discord_partner_sdk.dll" to pe(true, 3), "Wow-ARM64.exe" to pe(false, 4))
+            "Utils\\discord_partner_sdk.dll" to pe(true, 3), "WowClassic-arm64.exe" to pe(false, 4))
         val installKey = "c".repeat(32)
         val encodingKey = "d".repeat(32); val archiveKey = "e".repeat(32)
         // Config files are named after their own MD5; the downloader verifies that.
@@ -86,8 +86,8 @@ class WowVoiceRepairCdnTest {
         }
         server.start()
         try {
-            val root = temp.newFolder(); val client = File(root, "_forever_").apply { mkdirs() }
-            val exe = File(client, "Wow-ARM64.exe").apply { writeText("keep installed EXE") }
+            val root = temp.newFolder(); val client = File(root, "_classic_era_").apply { mkdirs() }
+            val exe = File(client, "WowClassic-arm64.exe").apply { writeText("keep installed EXE") }
             val config = File(client, "WTF/Config.wtf").apply { parentFile!!.mkdirs(); writeText("keep graphics") }
             val info = File(root, ".build.info").apply {
                 writeText("Product|Active|Version|Build Key|CDN Key|CDN Hosts|CDN Path\n" +
@@ -103,7 +103,7 @@ class WowVoiceRepairCdnTest {
             files.filterKeys { it.startsWith("Utils") }.forEach { (name, bytes) -> assertArrayEquals(bytes, File(client, name.replace('\\', '/')).readBytes()) }
             assertEquals("keep installed EXE", exe.readText()); assertEquals("keep graphics", config.readText()); assertArrayEquals(originalInfo, info.readBytes())
             assertTrue(File(root, "Data/indices/$archiveKey.index").isFile)
-            assertFalse(calls.contains(md5(blte(files.getValue("Wow-ARM64.exe")))))
+            assertFalse(calls.contains(md5(blte(files.getValue("WowClassic-arm64.exe")))))
             calls.clear()
             assertEquals(0, WowClientDownloader.repairVoiceFiles(root, {}, { false }))
             assertEquals(listOf(build, installKey), calls.toList())
@@ -117,13 +117,13 @@ class WowVoiceRepairCdnTest {
         }
         server.start()
         try {
-            val root = temp.newFolder(); File(root, "_forever_").mkdirs()
+            val root = temp.newFolder(); File(root, "_classic_era_").mkdirs()
             val key = md5("the real config".toByteArray())
             File(root, ".build.info").writeText("Product|Active|Version|Build Key|CDN Key|CDN Hosts|CDN Path\n" +
                 "wowf|1|v|$key|$key|127.0.0.1:${server.port}|tpr/wow\n")
             val error = assertThrows(java.io.IOException::class.java) { WowClientDownloader.repairVoiceFiles(root, {}, { false }) }
             assertTrue(error.message!!.contains("checksum", ignoreCase = true))
-            assertFalse(File(root, "_forever_/Utils").exists())
+            assertFalse(File(root, "_classic_era_/Utils").exists())
         } finally { server.shutdown() }
     }
 

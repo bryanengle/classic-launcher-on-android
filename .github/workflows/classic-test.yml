@@ -1,0 +1,38 @@
+name: Classic Era test build
+on:
+  workflow_dispatch:
+  push:
+    branches: [classic-support]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Prepare verified runtime packages
+        run: |
+          python3 tools/fetch_classic_components.py
+          python3 tools/verify_bundled_runtime_versions.py
+      - name: Build and run unit tests
+        run: ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx4g :app:assembleModernDebug :app:testModernDebugUnitTest
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: Classic-Era-RP6-test
+          path: app/build/outputs/apk/modern/debug/*.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Classic-Era-test-reports
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/

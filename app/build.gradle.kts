@@ -41,7 +41,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = if (wowRelease) "forever.launcher" else "forever.launcher.beta"
+        applicationId = "com.bryanengle.classicera.launcher"
 
         minSdk = 26
 
@@ -49,8 +49,8 @@ android {
 
         versionCode = 1025
         // One number per change round (1.0.1, 1.0.2, ...): the APK version, the archive version and the notes use the same value.
-        versionName = "1.0.0"
-        manifestPlaceholders["appLabel"] = if (wowRelease) "Forever Launcher" else "Forever Launcher Beta"
+        versionName = "0.1.0-classic-era-test"
+        manifestPlaceholders["appLabel"] = "Classic Era Test"
 
         val iconValue = "@mipmap/ic_package_042"
         val iconRoundValue = "@mipmap/ic_package_042_round"

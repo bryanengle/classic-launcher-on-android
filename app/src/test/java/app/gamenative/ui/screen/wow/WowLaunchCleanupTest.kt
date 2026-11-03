@@ -35,7 +35,7 @@ class WowLaunchCleanupTest {
     @Test fun `normal XServer Wine start command still targets native ARM64 WoW without winhandler`() {
         val c = Container("wow_forever").apply {
             rootDir = temp.newFolder("container")
-            executablePath = "G:\\_forever_\\Wow-ARM64.exe"
+            executablePath = "G:\\_classic_era_\\WowClassic-arm64.exe"
             execArgs = "-d3d11"
             drives = "G:${temp.newFolder("game").path}"
         }

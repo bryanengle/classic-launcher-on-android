@@ -30,7 +30,7 @@ class WowVoiceFilesTest {
 
     @Test fun installedBuildVoiceSelectionIncludesActualTProxyAndOnlyArm64() {
         val valid = listOf(entry("Utils\\WowVoiceProxyT.exe"), entry("Utils\\vivoxsdk.dll"), entry("Utils\\discord_partner_sdk.dll"))
-        val all = valid + listOf(WowClientDownloader.InstallEntry("Utils\\WowVoiceProxyT.exe", "other", setOf("Windows", "x86_64")), entry("Wow-ARM64.exe"), entry("Utils\\WowVoiceProxy-China.exe"))
+        val all = valid + listOf(WowClientDownloader.InstallEntry("Utils\\WowVoiceProxyT.exe", "other", setOf("Windows", "x86_64")), entry("WowClassic-arm64.exe"), entry("Utils\\WowVoiceProxy-China.exe"))
         assertEquals(valid, WowClientDownloader.voiceEntries(all))
         assertTrue(valid.all { it.isClientBinary() })
     }
@@ -42,7 +42,7 @@ class WowVoiceFilesTest {
     }
     @Test fun verifiedPayloadInstallsWithoutTouchingExeConfigOrCaches() {
         val root = temp.newFolder(); File(root, "WTF").mkdirs()
-        val untouched = listOf("Wow-ARM64.exe", "WTF/Config.wtf", "shader.dxvk-cache").map { File(root, it).apply { writeText("unchanged:$it") } }
+        val untouched = listOf("WowClassic-arm64.exe", "WTF/Config.wtf", "shader.dxvk-cache").map { File(root, it).apply { writeText("unchanged:$it") } }
         val old = untouched.associateWith { it.readBytes() }
         val entries = listOf(entry("Utils\\WowVoiceProxyT.exe"), entry("Utils\\vivoxsdk.dll"), entry("Utils\\discord_partner_sdk.dll"))
         assertEquals(3, install(root, entries))
@@ -75,7 +75,7 @@ class WowVoiceFilesTest {
     }
     @Test fun traversalAndSymlinkOutsideGameAreRejected() {
         val root = temp.newFolder(); val outside = temp.newFolder()
-        assertThrows(IllegalArgumentException::class.java) { install(root, listOf(entry("Utils\\..\\Wow-ARM64.exe"))) }
+        assertThrows(IllegalArgumentException::class.java) { install(root, listOf(entry("Utils\\..\\WowClassic-arm64.exe"))) }
         Files.createSymbolicLink(File(root, "Utils").toPath(), outside.toPath())
         assertThrows(IllegalArgumentException::class.java) { install(root, listOf(entry("Utils\\WowVoiceProxyT.exe"))) }
         assertTrue(outside.list()!!.isEmpty())

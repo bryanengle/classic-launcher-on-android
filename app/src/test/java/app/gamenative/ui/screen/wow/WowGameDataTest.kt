@@ -78,7 +78,7 @@ class WowGameDataTest {
     @Test fun downloaderProgressShowsInHungarianToo() {
         val dir = listOf(File("src/main/assets/i18n"), File("app/src/main/assets/i18n")).first { it.isDirectory }
         WowI18n.install("hu", File(dir, "hu.json").readText())
-        val (en, hu) = WowClientDownloader.Text.downloading("Wow-ARM64.exe", 1, 3, "12.5", "80.1", "6.4")
+        val (en, hu) = WowClientDownloader.Text.downloading("WowClassic-arm64.exe", 1, 3, "12.5", "80.1", "6.4")
         assertEquals(hu, WowI18n.translate("hu", en))
         val (enIdx, huIdx) = WowClientDownloader.Text.indexes(733, 1401, "3.2")
         assertEquals(huIdx, WowI18n.translate("hu", enIdx))

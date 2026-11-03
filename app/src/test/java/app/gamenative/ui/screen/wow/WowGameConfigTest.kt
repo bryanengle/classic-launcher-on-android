@@ -9,14 +9,14 @@ import java.io.File
 class WowGameConfigTest {
     @get:Rule val temp = TemporaryFolder()
 
-    private fun config(root: File) = File(root, "_forever_/WTF/Config.wtf")
+    private fun config(root: File) = File(root, "_classic_era_/WTF/Config.wtf")
 
     @Test fun theGameTabShowsTheRegionLanguageAndAccountTheGameUsesNow() {
         val root = temp.newFolder()
         assertEquals("1", WowGameConfig.current(root).account)
         assertEquals("enUS", WowGameConfig.current(root).locale)
         config(root).apply { parentFile!!.mkdirs() }.writeText("SET textLocale \"deDE\"\nSET accountList \"WoW1|!WoW2|\"\n")
-        File(root, ".build.info").writeText("Branch!STRING:0|Product!STRING:0\neu|wowf\n")
+        File(root, ".build.info").writeText("Branch!STRING:0|Product!STRING:0\neu|wow_classic_era\n")
         assertEquals(WowGameConfig.Current("eu", "deDE", "2"), WowGameConfig.current(root))
     }
 
@@ -62,8 +62,8 @@ class WowGameConfigTest {
             "SET ResampleQuality \"0\"", "SET graphicsQuality \"0\"",
             "SET GamePadEnable \"1\"", "SET gxResolution \"1344x608\""))
             assertTrue("Missing initial default: $line", line in lines)
-        val flavor = File(root, "_forever_/.flavor.info")
-        assertEquals("Product Flavor!STRING:0\nwowf\n", flavor.readText())
+        val flavor = File(root, "_classic_era_/.flavor.info")
+        assertEquals("Product Flavor!STRING:0\nwow_classic_era\n", flavor.readText())
     }
 
     @Test fun omittedGraphicsCvarsAreNotReintroducedIntoExistingConfig() {

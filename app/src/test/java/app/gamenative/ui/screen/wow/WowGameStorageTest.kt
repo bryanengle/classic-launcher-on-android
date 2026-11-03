@@ -17,9 +17,9 @@ class WowGameStorageTest {
         File(root, "Data/a").mkdirs()
         File(root, "Data/a/one.bin").writeBytes(ByteArray(10_000) { it.toByte() })
         File(root, "Data/two.bin").writeBytes(ByteArray(5) { 7 })
-        File(root, "_forever_").mkdirs()
-        File(root, "_forever_/Wow-ARM64.exe").writeBytes(ByteArray(300) { 1 })
-        File(root, ".build.info").writeText("Product!STRING:0\nwowf\n")
+        File(root, "_classic_era_").mkdirs()
+        File(root, "_classic_era_/WowClassic-arm64.exe").writeBytes(ByteArray(300) { 1 })
+        File(root, ".build.info").writeText("Product!STRING:0\nwow_classic_era\n")
     }
 
     @Test fun moveLeavesOnlyTheTarget() = runBlocking {
@@ -31,7 +31,7 @@ class WowGameStorageTest {
         assertEquals(10_000L, File(target, "Data/a/one.bin").length())
         assertEquals(5L, File(target, "Data/two.bin").length())
         assertTrue(File(target, ".build.info").isFile)
-        assertTrue(File(target, "_forever_/Wow-ARM64.exe").isFile)
+        assertTrue(File(target, "_classic_era_/WowClassic-arm64.exe").isFile)
         assertEquals(10_305L + File(target, ".build.info").length(), last)
     }
 

@@ -129,7 +129,6 @@ private fun WoWForeverScreenContent(
     var updateStatusText by remember { mutableStateOf("") }
     var isWrongGame by remember { mutableStateOf(false) }
     // A Classic beta install (its .build.info has no full-release row yet): Play waits for the in-place upgrade.
-    var isUpgradableBeta by remember { mutableStateOf(false) }
     var showInstallDialog by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var nextLaunch by remember { mutableStateOf<WowQuickSettings.Status?>(null) }
@@ -173,11 +172,10 @@ private fun WoWForeverScreenContent(
         buildInfoValid = snapshot.buildInfoValid
         hasStorageAccess = StorageUtils.hasStoragePermission(context, requestedPath)
         isWrongGame = snapshot.wrongGame
-        isUpgradableBeta = snapshot.upgradableBeta
         if (isWrongGame) {
-            errorMessage = t("Incompatible game (${snapshot.product}). Forever Launcher requires World of Warcraft: Forever (wowf).", "Nem kompatibilis játék (${snapshot.product}). A Forever Launcherhez World of Warcraft: Forever (wowf) kell.")
+            errorMessage = t("Incompatible game (${snapshot.product}). Classic Era Launcher requires World of Warcraft Classic Era (wow_classic_era).", "Nem kompatibilis játék (${snapshot.product}). A Classic Era Launcherhez World of Warcraft Classic Era (wow_classic_era) kell.")
         }
-        return exeExists && dataExists && buildInfoExists && hasStorageAccess && !isWrongGame && !isUpgradableBeta
+        return exeExists && dataExists && buildInfoExists && hasStorageAccess && !isWrongGame
     }
 
     LifecycleResumeEffect(gamePath) {
@@ -251,7 +249,7 @@ private fun WoWForeverScreenContent(
         else if (ok) checkVersionStatus()
     }
 
-    // Where a new install goes: an empty folder or one with the game is used as it is; any other gets a "World of Warcraft" folder.
+    // Where a new install goes: an empty folder or one with the game is used as it is; any other gets a "WoW Classic Era" folder.
     var installTarget by remember { mutableStateOf<String?>(null) }
     val installFolderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         scope.launch {
@@ -259,8 +257,8 @@ private fun WoWForeverScreenContent(
             val path = withContext(Dispatchers.IO) { StorageUtils.getPathFromTreeUri(context, uri) } ?: return@launch
             installTarget = withContext(Dispatchers.IO) {
                 val dir = File(path)
-                if (File(dir, ".build.info").isFile || dir.name.equals("World of Warcraft", true) || dir.list().isNullOrEmpty()) dir.absolutePath
-                else File(dir, "World of Warcraft").absolutePath
+                if (File(dir, ".build.info").isFile || dir.name.equals("WoW Classic Era", true) || dir.list().isNullOrEmpty()) dir.absolutePath
+                else File(dir, "WoW Classic Era").absolutePath
             }
         }
     }
@@ -356,7 +354,7 @@ private fun WoWForeverScreenContent(
 
     fun launchGame() {
         // An addon install/update/remove still writing to AddOns finishes first (the button is disabled meanwhile).
-        if (isPreparingBundledComponents || isLaunching || isWrongGame || isUpgradableBeta || storageBusy || WowAddonJobs.running > 0) return
+        if (isPreparingBundledComponents || isLaunching || isWrongGame || storageBusy || WowAddonJobs.running > 0) return
         // Play during the full game-data download: the download stops (keeping what it has, the storage closed and saved) and the
         // game starts; it then fetches what it needs itself, and CONTINUE later goes on at full speed.
         if (WowDataDownloadState.running) {
@@ -408,7 +406,7 @@ private fun WoWForeverScreenContent(
                     t("Missing .build.info in $gamePath. Copy it from your WoW install.", "Hiányzik a .build.info innen: $gamePath. Másold át a WoW telepítésedből.")
                 }
 
-                val arm64Exe = File(gamePath, "${WowClientDownloader.FLAVOR_DIR}/Wow-ARM64.exe")
+                val arm64Exe = File(gamePath, "${WowClientDownloader.FLAVOR_DIR}/${WowClientDownloader.EXECUTABLE}")
                 if (!arm64Exe.exists()) {
                     try {
                         WowClientDownloader.download(File(gamePath)) { msg ->
@@ -416,7 +414,7 @@ private fun WoWForeverScreenContent(
                         }
                     } catch (e: Exception) {
                         if (!arm64Exe.exists()) {
-                            throw IllegalStateException("Couldn't download Wow-ARM64.exe: ${e.message}", e)
+                            throw IllegalStateException("Couldn't download ${WowClientDownloader.EXECUTABLE}: ${e.message}", e)
                         }
 
                     }
@@ -663,9 +661,9 @@ private fun WoWForeverScreenContent(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Forever Launcher name (the logo is on the splash and the app icon); the game itself is named on the Play button.
+                // Classic Era Launcher name (the logo is on the splash and the app icon); the game itself is named on the Play button.
                 Text(
-                    text = "FOREVER",
+                    text = "CLASSIC ERA",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Black,
                     fontFamily = FontFamily.Serif,
@@ -696,7 +694,7 @@ private fun WoWForeverScreenContent(
             }
             // The whole game data at full speed, instead of the game's own slow download while it runs. Portrait: under the
             // ENVIRONMENT card; landscape: at the top of the right column, next to Play, so it is never below the screen edge.
-            val showDataCard = !filesMissing && !isWrongGame && !isUpgradableBeta &&
+            val showDataCard = !filesMissing && !isWrongGame &&
                 (gameData?.complete == false || WowDataDownloadState.running || WowDataDownloadState.error != null)
             val dataBlock: @Composable ColumnScope.() -> Unit = {
                 if (showDataCard) {
@@ -716,10 +714,9 @@ private fun WoWForeverScreenContent(
                     data.total <= 0 || data.downloaded <= 0 -> tx("Game Asset Archives (not downloaded yet)", "Játékfájlok (még nincsenek letöltve)") to false
                     else -> tx("Game Asset Archives (${data.percent}%)", "Játékfájlok (${data.percent}%)") to false
                 })
-                add((if (isUpgradableBeta) tx("Install Info (.build.info - Classic beta, upgrade below)", "Telepítési infó (.build.info - Classic béta, lent átállítható)")
-                    else if (isWrongGame) tx("Install Info (.build.info - requires wowf)", "Telepítési infó (.build.info - wowf kell)")
+                add((if (isWrongGame) tx("Install Info (.build.info - requires wow_classic_era)", "Telepítési infó (.build.info - wow_classic_era kell)")
                     else if (buildInfoExists && !buildInfoValid) tx("Install Info (.build.info unreadable - reinstall or repair the game)", "Telepítési infó (a .build.info olvashatatlan - telepítsd újra vagy javítsd a játékot)")
-                    else tx("Install Info (.build.info)", "Telepítési infó (.build.info)")) to (buildInfoValid && !isWrongGame && !isUpgradableBeta))
+                    else tx("Install Info (.build.info)", "Telepítési infó (.build.info)")) to (buildInfoValid && !isWrongGame))
                 add(tx("All Files Access Permission", "Teljes fájlhozzáférés engedélye") to hasStorageAccess)
                 versionStatus?.let { v ->
                     add((if (v.isOutdated) tx("Build: ${v.localVersion} (update ${v.remoteVersion} available)", "Build: ${v.localVersion} (${v.remoteVersion} frissítés elérhető)")
@@ -843,7 +840,7 @@ private fun WoWForeverScreenContent(
                     )
                 } else {
                     // No install yet, or a Classic beta install: download the game here (about 250 MB, the rest streams while playing).
-                    if (isUpgradableBeta || !buildInfoExists) {
+                    if (!buildInfoExists) {
                         Button(
                             onClick = { showInstallDialog = true },
                             enabled = !isPreparingBundledComponents && !isLaunching && !isUpdating && !storageBusy && WowAddonJobs.running == 0,
@@ -853,14 +850,12 @@ private fun WoWForeverScreenContent(
                         ) {
                             Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(22.dp))
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text(if (isUpgradableBeta) tx("UPGRADE TO WOW FOREVER", "ÁTÁLLÁS WOW FOREVERRE") else tx("DOWNLOAD THE GAME", "JÁTÉK LETÖLTÉSE"),
+                            Text(tx("DOWNLOAD THE GAME", "JÁTÉK LETÖLTÉSE"),
                                 fontSize = 15.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = if (isUpgradableBeta) tx("Your Classic beta install becomes World of Warcraft: Forever in place: only the new client (about 250 MB) downloads, your game data stays.",
-                                "A Classic béta-telepítésed helyben lesz World of Warcraft: Forever: csak az új kliens töltődik le (kb. 250 MB), a játékfájlok maradnak.")
-                            else tx("No PC needed: about 250 MB now, the game downloads the rest while you play.",
+                            text = tx("Downloads the Classic Era ARM64 client first. Game data can download here or while you play.",
                                 "PC nem kell: most kb. 250 MB, a többit a játék játék közben tölti le."),
                             fontSize = 11.sp, color = WowTheme.palette.muted, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(0.85f),
                         )
@@ -882,7 +877,7 @@ private fun WoWForeverScreenContent(
                     if (versionStatus?.isOutdated == true) {
                         Button(
                             onClick = { performUpdate() },
-                            enabled = !isPreparingBundledComponents && !isLaunching && !isUpdating && !storageBusy && !filesMissing && !isWrongGame && !isUpgradableBeta && WowAddonJobs.running == 0,
+                            enabled = !isPreparingBundledComponents && !isLaunching && !isUpdating && !storageBusy && !filesMissing && !isWrongGame && WowAddonJobs.running == 0,
                             modifier = Modifier
                                 .fillMaxWidth(0.85f)
                                 .height(46.dp),
@@ -906,7 +901,7 @@ private fun WoWForeverScreenContent(
 
                         OutlinedButton(
                             onClick = { if (!lowDataAcknowledged && gameData?.let { it.lowData } == true) showLowDataDialog = true else launchGame() },
-                            enabled = !isPreparingBundledComponents && !isLaunching && !isUpdating && !storageBusy && !filesMissing && !isWrongGame && !isUpgradableBeta && WowAddonJobs.running == 0,
+                            enabled = !isPreparingBundledComponents && !isLaunching && !isUpdating && !storageBusy && !filesMissing && !isWrongGame && WowAddonJobs.running == 0,
                             modifier = Modifier
                                 .fillMaxWidth(0.85f)
                                 .height(42.dp),
@@ -944,7 +939,7 @@ private fun WoWForeverScreenContent(
                     } else {
                         Button(
                             onClick = { if (!lowDataAcknowledged && gameData?.let { it.lowData } == true) showLowDataDialog = true else launchGame() },
-                            enabled = !isPreparingBundledComponents && !isLaunching && !isUpdating && !storageBusy && !filesMissing && !isWrongGame && !isUpgradableBeta && WowAddonJobs.running == 0,
+                            enabled = !isPreparingBundledComponents && !isLaunching && !isUpdating && !storageBusy && !filesMissing && !isWrongGame && WowAddonJobs.running == 0,
                             modifier = Modifier
                                 .fillMaxWidth(0.85f)
                                 .height(46.dp),
@@ -957,7 +952,7 @@ private fun WoWForeverScreenContent(
                             Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(22.dp))
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = if (isWrongGame) tx("WOW FOREVER REQUIRED", "WOW FOREVER SZÜKSÉGES") else "WORLD OF WARCRAFT",
+                                text = if (isWrongGame) tx("CLASSIC ERA REQUIRED", "WOW FOREVER SZÜKSÉGES") else "WORLD OF WARCRAFT",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 1.sp
@@ -1140,7 +1135,7 @@ private fun WoWForeverScreenContent(
         AlertDialog(
             onDismissRequest = { showInstallDialog = false; installTarget = null },
             title = {
-                Text(if (isUpgradableBeta) tx("Upgrade to WoW Forever", "Átállás WoW Foreverre") else tx("Download World of Warcraft: Forever", "World of Warcraft: Forever letöltése"),
+                Text(tx("Download World of Warcraft Classic Era", "World of Warcraft Classic Era letöltése"),
                     fontWeight = FontWeight.Bold, fontSize = 17.sp, color = WowTheme.palette.accent)
             },
             text = {
@@ -1173,7 +1168,7 @@ private fun WoWForeverScreenContent(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = WowTheme.palette.accentFill, contentColor = Color.White),
                     shape = RoundedCornerShape(10.dp),
-                ) { Text(if (isUpgradableBeta) tx("UPGRADE", "ÁTÁLLÁS") else tx("DOWNLOAD", "LETÖLTÉS"), fontWeight = FontWeight.Bold) }
+                ) { Text(tx("DOWNLOAD", "LETÖLTÉS"), fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
                 TextButton(onClick = { showInstallDialog = false; installTarget = null }) { Text(tx("CANCEL", "MÉGSE"), color = WowTheme.palette.mutedLight) }
@@ -1249,7 +1244,7 @@ private fun WoWForeverScreenContent(
             },
             text = {
                 Text(
-                    text = tx("Android requires 'All files access' for Forever Launcher to read and update game files in this directory.\n\nPlease enable 'Allow access to manage all files' on the next screen.", "Az Android 'Teljes fájlhozzáférés' engedélyt kér, hogy a Forever Launcher olvashassa és frissíthesse a játékfájlokat ebben a mappában.\n\nA következő képernyőn engedélyezd a 'Hozzáférés az összes fájl kezeléséhez' opciót."),
+                    text = tx("Android requires 'All files access' for Classic Era Launcher to read and update game files in this directory.\n\nPlease enable 'Allow access to manage all files' on the next screen.", "Az Android 'Teljes fájlhozzáférés' engedélyt kér, hogy a Classic Era Launcher olvashassa és frissíthesse a játékfájlokat ebben a mappában.\n\nA következő képernyőn engedélyezd a 'Hozzáférés az összes fájl kezeléséhez' opciót."),
                     fontSize = 13.sp,
                     color = WowTheme.palette.text,
                     lineHeight = 18.sp
@@ -1285,10 +1280,10 @@ object GamePath {
     private const val PREFS = "wow_forever"
     private const val KEY_GAME_PATH = "game_path"
 
-    /** Where a new install goes unless the player picks another folder (1.0.1: "World of Warcraft", like the PC install). */
-    private val defaultPath = File(Environment.getExternalStorageDirectory(), "World of Warcraft")
+    /** Where a new install goes unless the player picks another folder (1.0.1: "WoW Classic Era", like the PC install). */
+    private val defaultPath = File(Environment.getExternalStorageDirectory(), "WoW Classic Era")
     /** The earlier default; an install there is still found. */
-    private val legacyPath = File(Environment.getExternalStorageDirectory(), "WoW Forever")
+    private val legacyPath = File(Environment.getExternalStorageDirectory(), "WoW Classic Era")
 
     fun load(context: Context): String {
         val saved = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_GAME_PATH, null)
@@ -1308,7 +1303,7 @@ object GamePath {
     fun isReady(context: Context, path: String = load(context)): Boolean {
         if (path.isEmpty()) return false
         val root = File(path)
-        val exe = File(root, "${WowClientDownloader.FLAVOR_DIR}/Wow-ARM64.exe")
+        val exe = File(root, "${WowClientDownloader.FLAVOR_DIR}/${WowClientDownloader.EXECUTABLE}")
         val dataDir = File(root, "Data")
         val buildInfo = File(root, ".build.info")
         return exe.exists() &&
@@ -1328,7 +1323,7 @@ object GamePath {
 
     /** The game folder is the one with .build.info, whatever its name: the picked folder, its parent, or one folder below it. */
     fun findGameRoot(picked: File): File? =
-        (sequenceOf(picked, picked.parentFile, File(picked, "WoW Forever"), File(picked, "World of Warcraft")) +
+        (sequenceOf(picked, picked.parentFile, File(picked, "WoW Classic Era"), File(picked, "WoW Classic Era")) +
             (picked.listFiles()?.filter { it.isDirectory }?.sortedBy { it.name }?.asSequence() ?: emptySequence()))
             .filterNotNull()
             .firstOrNull { File(it, ".build.info").isFile }

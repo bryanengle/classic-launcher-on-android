@@ -18,19 +18,13 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.zip.Inflater
 
 object WowClientDownloader {
-    const val FLAVOR_DIR = "_forever_"
+    const val FLAVOR_DIR = "_classic_era_"
+    const val EXECUTABLE = "WowClassic-arm64.exe"
     private const val PLATFORM_ARCH = "arm64"
     private const val EXCLUDED_ARCH = "x86_64"
 
-    const val TARGET_PRODUCT = "wowf"
+    const val TARGET_PRODUCT = "wow_classic_era"
 
-    /**
-     * The pre-release Classic beta (2026). Its Data/ archives are the ones the full release uses, so a beta install is upgraded in
-     * place ([install]): the new client and a [TARGET_PRODUCT] row in .build.info, nothing else. (Approach from
-     * jaredgei/wow-forever-android 2.3.0, GPL-3.0.)
-     */
-    const val LEGACY_FLAVOR_DIR = "_classic_beta_"
-    const val LEGACY_PRODUCT = "wow_classic_beta"
     private const val INDEX_DOWNLOAD_THREADS = 16
     /** Large files and archive members download as parallel ranges of this size: one TCP stream to the CDN is far slower than the line. */
     private const val SEGMENT_BYTES = 4L * 1024 * 1024
@@ -62,13 +56,8 @@ object WowClientDownloader {
         lines.drop(1).mapNotNull { header.zip(it.split("|")).toMap()["Product"]?.takeIf { p -> p.isNotBlank() } }.toSet()
     }.getOrDefault(emptySet())
 
-    /** A Classic beta install with no full-release row yet: [install] upgrades it in place. */
-    fun isUpgradableBeta(gameRoot: File): Boolean = installedProducts(File(gameRoot, ".build.info")).let {
-        LEGACY_PRODUCT in it && TARGET_PRODUCT !in it
-    }
-
     /**
-     * The install's region: the Branch of its row (or of the beta row it came from), else a guess from the phone's country. It
+     * The install's region: the Branch of the Classic Era row, else the phone's region with Europe as fallback. It
      * names the .build.info branch and the Config.wtf portal; without a portal WoW stops at a region picker.
      */
     fun region(gameRoot: File): String {
@@ -77,19 +66,18 @@ object WowClientDownloader {
             val header = lines.first().split("|").map { it.substringBefore("!") }
             lines.drop(1).map { header.zip(it.split("|")).toMap() }
         }.getOrDefault(emptyList())
-        val branch = (rows.firstOrNull { it["Product"] == TARGET_PRODUCT } ?: rows.firstOrNull { it["Product"] == LEGACY_PRODUCT })
+        val branch = rows.firstOrNull { it["Product"] == TARGET_PRODUCT }
             ?.get("Branch")?.lowercase(Locale.ROOT)?.takeIf { it in setOf("us", "eu", "kr", "tw", "cn") }
         return branch ?: when (Locale.getDefault().country.uppercase(Locale.ROOT)) {
             "KR" -> "kr"
             "TW", "HK" -> "tw"
             in EU_COUNTRIES -> "eu"
-            else -> "us"
+            else -> "eu"
         }
     }
 
     /**
-     * Sets up the full release in [gameRoot]: an empty folder (a new install without a PC) or a Classic beta install upgraded in
-     * place. Downloads the build configs, the archive indexes and the ARM64 client (about 250 MB), then writes the
+     * Sets up Classic Era in [gameRoot], preserving other products' build rows. Downloads the build configs, the archive indexes and the ARM64 client (about 250 MB), then writes the
      * [TARGET_PRODUCT] row of .build.info last, so an interrupted install simply runs again. Game assets not on disk are streamed
      * from the CDN by the game while playing.
      */
@@ -281,14 +269,10 @@ object WowClientDownloader {
     fun install(gameRoot: File, region: String, onStatus: (String) -> Unit) {
         require(region in REGIONS) { "Unknown region: $region" }
         onStatus(Text.checking().first)
-        val target = fetchRemote(fast = false, localRow = null)
+        val target = fetchRemote(fast = false, localRow = null, region = region)
             ?: throw IOException("Couldn't reach Blizzard's version server. Check your connection.")
         check(target.remoteBuildConfig.isNotBlank()) { "Blizzard's version server returned no build." }
         listOf("Data/data", "Data/indices", "Data/config").forEach { File(gameRoot, it).mkdirs() }
-        // The Battle.net app records which shared archives a product uses in Data/<product>/; the beta's record fits the release.
-        val residency = File(gameRoot, "Data/$TARGET_PRODUCT")
-        val legacy = File(gameRoot, "Data/$LEGACY_PRODUCT")
-        if (!residency.exists() && legacy.isDirectory) runCatching { legacy.copyRecursively(residency) }
         updateGame(gameRoot, target, onStatus, region)
     }
 
@@ -330,7 +314,7 @@ object WowClientDownloader {
     }
 
     /** The current build on Blizzard's version server; [localRow] fills in CDN details the server does not answer (fast mode). */
-    private fun fetchRemote(fast: Boolean, localRow: Map<String, String>?): VersionCheckResult? {
+    private fun fetchRemote(fast: Boolean, localRow: Map<String, String>?, region: String = localRow?.get("Branch") ?: "eu"): VersionCheckResult? {
         val request = Request.Builder()
             .url("$VERSION_SERVER/$TARGET_PRODUCT/versions")
             .build()
@@ -348,7 +332,7 @@ object WowClientDownloader {
         val lines = text.lines().filter { it.isNotBlank() && !it.startsWith("#") }
         if (lines.size < 2) return null
         val header = lines.first().split("|").map { it.substringBefore("!") }
-        val remoteRow = lines.drop(1).map { header.zip(it.split("|")).toMap() }.firstOrNull() ?: return null
+        val remoteRow = lines.drop(1).map { header.zip(it.split("|")).toMap() }.firstOrNull { it["Region"] == region } ?: return null
         val remoteVersion = remoteRow["VersionsName"] ?: remoteRow["VersionName"] ?: remoteRow["Version"] ?: return null
         val remoteBuildKey = remoteRow["BuildConfig"] ?: ""
         val remoteCdnKey = remoteRow["CDNConfig"] ?: ""
@@ -367,7 +351,7 @@ object WowClientDownloader {
         val cdnsLines = cdnsText?.lines()?.filter { it.isNotBlank() && !it.startsWith("#") } ?: emptyList()
         val cdnsRow = if (cdnsLines.size >= 2) {
             val cdnsHeader = cdnsLines.first().split("|").map { it.substringBefore("!") }
-            cdnsLines.drop(1).map { cdnsHeader.zip(it.split("|")).toMap() }.firstOrNull { it["Name"] == "us" }
+            cdnsLines.drop(1).map { cdnsHeader.zip(it.split("|")).toMap() }.firstOrNull { it["Name"] == region }
                 ?: cdnsLines.drop(1).map { cdnsHeader.zip(it.split("|")).toMap() }.firstOrNull()
         } else null
 
@@ -392,6 +376,7 @@ object WowClientDownloader {
 
     /** [region]: the branch to record (an install picks it); null keeps the one in .build.info. */
     fun updateGame(gameRoot: File, target: VersionCheckResult, onStatus: (String) -> Unit, region: String? = null) {
+        require(target.product == TARGET_PRODUCT) { "Expected Classic Era, got ${target.product}" }
         val cdn = Cdn(
             hosts = target.remoteCdnHosts.ifEmpty { listOf("level3.blizzard.com", "us.cdn.blizzard.com") },
             path = target.remoteCdnPath.ifEmpty { "tpr/wow" },
@@ -419,7 +404,7 @@ object WowClientDownloader {
 
         val install = parseInstall(blteDecode(cdn.require("data", buildConfig.getValue("install")[1])))
         val files = install.filter { it.isClientBinary() }
-        check(files.isNotEmpty()) { "No Windows ARM64 client files in this build" }
+        check(files.any { it.relativePath == EXECUTABLE }) { "No Classic Era Windows ARM64 executable in this build" }
 
         val clientDir = File(gameRoot, FLAVOR_DIR)
         files.forEach { destination(clientDir, it.relativePath) }
@@ -531,7 +516,7 @@ object WowClientDownloader {
             val buildConfig = parseConfig(String(cdn.requireConfig(row.getValue("Build Key"))))
             val install = parseInstall(blteDecode(cdn.require("data", buildConfig.getValue("install")[1])))
             val files = install.filter { it.isClientBinary() }
-            check(files.isNotEmpty()) { "No Windows ARM64 client files in this build" }
+            check(files.any { it.relativePath == EXECUTABLE }) { "No Classic Era Windows ARM64 executable in this build" }
 
             val clientDir = File(gameRoot, FLAVOR_DIR)
             files.forEach { destination(clientDir, it.relativePath) }

@@ -13,7 +13,7 @@ import java.io.IOException
  * Switching syncs the files across, never moves or deletes the other copy by itself.
  */
 internal object WowGameStorage {
-    private const val FOLDER = "WoW Forever"
+    private const val FOLDER = "WoW Classic Era"
     private const val SPACE_MARGIN_BYTES = 512L * 1024 * 1024
     private const val COMPARE_BUFFER_BYTES = 1024 * 1024
 

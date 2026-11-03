@@ -6,7 +6,7 @@ import org.json.JSONObject
 /** Ownership boundary between the WoW launcher and persistent container settings. */
 internal object WowContainerProfile {
     const val CONTAINER_ID = "wow_forever"
-    const val EXECUTABLE_PATH = "G:\\_forever_\\Wow-ARM64.exe"
+    const val EXECUTABLE_PATH = "G:\\${WowClientDownloader.FLAVOR_DIR}\\${WowClientDownloader.EXECUTABLE}"
 
     /** Complete creation profile. Never pass this JSON to an existing container's loadData. */
     fun defaultsForNewContainer(gamePath: String, isAdreno8xx: Boolean, isSamsung: Boolean, fitsRedMagic: Boolean = false, fullscreen: String? = null): JSONObject {
@@ -18,10 +18,10 @@ internal object WowContainerProfile {
 
         return JSONObject().apply {
             // A display with the RedMagic aspect starts at its fullscreen resolution (managed, so the game config follows it).
-            put("extraData", JSONObject().put("wowTuDebugMigration", "1").put("pulseLatencyMigration", "1").put("redmagicHalfMigration", "1").apply { if (start != null) put(WowDisplaySettings.MANAGED, "1") })
+            put("extraData", JSONObject().put(WowQuickSettings.FPS_ENABLED_EXTRA, "1").put(WowQuickSettings.FPS_TARGET_EXTRA, "30").put("wowTuDebugMigration", "1").put("pulseLatencyMigration", "1").put("redmagicHalfMigration", "1").apply { if (start != null) put(WowDisplaySettings.MANAGED, "1") })
             put("id", CONTAINER_ID)
-            put("name", "WoW Forever")
-            put("screenSize", start ?: if (isAdreno8xx) "1280x720" else "1920x1080")
+            put("name", "WoW Classic Era")
+            put("screenSize", start ?: "1280x720")
             put("envVars", envVars)
             put("graphicsDriver", "Wrapper")
             put("graphicsDriverVersion", driverVersion)

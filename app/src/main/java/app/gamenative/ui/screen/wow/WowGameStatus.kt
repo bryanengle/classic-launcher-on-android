@@ -9,15 +9,13 @@ import java.io.File
  */
 internal data class WowGameStatus(val executable: Boolean, val data: Boolean, val buildInfo: Boolean, val product: String,
                                   val buildInfoValid: Boolean = buildInfo && product.isNotBlank()) {
-    val wrongGame get() = buildInfo && product.isNotBlank() && product != WowClientDownloader.TARGET_PRODUCT && !upgradableBeta
-    /** A Classic beta install without a full-release row: the launcher offers the in-place upgrade instead of Play. */
-    val upgradableBeta get() = buildInfo && product == WowClientDownloader.LEGACY_PRODUCT
+    val wrongGame get() = buildInfo && product.isNotBlank() && product != WowClientDownloader.TARGET_PRODUCT
     companion object {
         fun scan(root: File): WowGameStatus {
             val build = File(root, ".build.info")
             val present = build.exists()
             val product = if (build.isFile) WowClientDownloader.readBuildInfo(build)?.get("Product").orEmpty().trim() else ""
-            return WowGameStatus(File(root, "${WowClientDownloader.FLAVOR_DIR}/Wow-ARM64.exe").exists(),
+            return WowGameStatus(File(root, "${WowClientDownloader.FLAVOR_DIR}/${WowClientDownloader.EXECUTABLE}").exists(),
                 File(root, "Data").let { it.exists() && it.listFiles()?.isNotEmpty() == true },
                 present, product)
         }

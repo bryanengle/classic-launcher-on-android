@@ -28,7 +28,7 @@ internal object WowVkd3dRuntime {
         val (_, payloads) = WowVkd3dComponents.selected(context, container)
         val report = WowVkd3dCapabilities.probe(context, container)
         require(report.compatible) { report.summary() }
-        val client = File(WowLaunchEnvironment.gameDirectory(container).host, "Wow-ARM64.exe")
+        val client = File(WowLaunchEnvironment.gameDirectory(container).host, WowClientDownloader.EXECUTABLE)
         WowArm64Pe.validate(client, dll = false)
         val dxgiProfile = WowDxvkSelector.currentProfile(container.dxWrapper, container.dxWrapperConfig, WowDxvkSelector.installedProfiles(context))
             ?: error("Selected DXGI is not installed; no fallback was used.")

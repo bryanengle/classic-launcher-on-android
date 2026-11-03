@@ -20,21 +20,21 @@ class WowCacheCleanerTest {
         val p = plan(); val root = p.dxvkRoots.single()
         val names = listOf("Wow-ARM64.dxvk-cache", "1234.dxvk.bin", "1234.dxvk.lut")
         names.forEach { File(root,it).writeText("cache") }
-        File(root,"Wow-ARM64.exe").writeText("game")
+        File(root,"WowClassic-arm64.exe").writeText("game")
         File(root,"Config.wtf").writeText("settings")
         val result = WowCacheCleaner.clear(p,setOf(WowCacheCleaner.Kind.DXVK)) { false }
         assertEquals(3,result.entries)
         names.forEach { assertFalse(File(root,it).exists()) }
-        assertTrue(File(root,"Wow-ARM64.exe").exists())
+        assertTrue(File(root,"WowClassic-arm64.exe").exists())
         assertTrue(File(root,"Config.wtf").exists())
     }
     @Test fun vkd3dClearsOnlyItsPipelineCacheFiles() {
         val p = plan().let { it.copy(vkd3dRoots = it.dxvkRoots) }; val root = p.vkd3dRoots.single()
         File(root,"vkd3d-proton.cache").writeText("c"); File(root,"vkd3d-proton.cache.write").writeText("c")
-        File(root,"Wow-ARM64.dxvk-cache").writeText("dx11"); File(root,"Wow-ARM64.exe").writeText("game")
+        File(root,"Wow-ARM64.dxvk-cache").writeText("dx11"); File(root,"WowClassic-arm64.exe").writeText("game")
         assertEquals(2, WowCacheCleaner.clear(p,setOf(WowCacheCleaner.Kind.VKD3D)) { false }.entries)
         assertFalse(File(root,"vkd3d-proton.cache").exists()); assertFalse(File(root,"vkd3d-proton.cache.write").exists())
-        assertTrue(File(root,"Wow-ARM64.dxvk-cache").exists()); assertTrue(File(root,"Wow-ARM64.exe").exists())
+        assertTrue(File(root,"Wow-ARM64.dxvk-cache").exists()); assertTrue(File(root,"WowClassic-arm64.exe").exists())
     }
     @Test fun gpuAndWowSelectionsRemainIndependent() {
         val p=plan()
@@ -65,28 +65,28 @@ class WowCacheCleanerTest {
         assertEquals(0,WowCacheCleaner.clear(plan(),WowCacheCleaner.Kind.entries.toSet()) { false }.entries)
     }
     @Test fun pathPlanHonorsCacheLocationAndExplicitOverride() {
-        val game=tmp.newFolder("game");File(game,"_forever_").mkdirs()
+        val game=tmp.newFolder("game");File(game,"_classic_era_").mkdirs()
         val c=Container("wow_forever").apply {
             rootDir=tmp.newFolder("container")
-            executablePath="G:\\_forever_\\Wow-ARM64.exe"
+            executablePath="G:\\_classic_era_\\WowClassic-arm64.exe"
             drives="G:${game.path}"
         }
         val appCache=tmp.newFolder("appcache")
         assertEquals(WowLaunchEnvironment.GAMENATIVE_DEFAULT,WowLaunchEnvironment.location(c))
         c.putExtra(WowLaunchEnvironment.LOCATION_KEY,WowLaunchEnvironment.GAME_DIRECTORY)
         val gamePlan=WowCacheCleaner.plan(c,appCache)
-        assertEquals(File(game,"_forever_"),gamePlan.dxvkRoots.single())
+        assertEquals(File(game,"_classic_era_"),gamePlan.dxvkRoots.single())
         c.putExtra(WowLaunchEnvironment.LOCATION_KEY,WowLaunchEnvironment.GAMENATIVE_DEFAULT)
         assertTrue(WowCacheCleaner.plan(c,appCache).dxvkRoots.contains(File(c.rootDir,".cache")))
-        c.envVars=com.winlator.core.envvars.EnvVars().apply { put("DXVK_SHADER_CACHE_PATH", "G:\\_forever_\\custom") }.toString()
+        c.envVars=com.winlator.core.envvars.EnvVars().apply { put("DXVK_SHADER_CACHE_PATH", "G:\\_classic_era_\\custom") }.toString()
         assertTrue(WowCacheCleaner.plan(c,appCache).dxvkRoots.any { it.name=="custom" })
     }
     @Test fun cachePlanRejectsTraversalWithoutTouchingConfig() {
         val game=tmp.newFolder("mapped")
-        File(game,"_forever_").mkdirs()
+        File(game,"_classic_era_").mkdirs()
         val c=Container("wow_forever").apply {
             rootDir=tmp.newFolder("prefix")
-            executablePath="G:\\_forever_\\Wow-ARM64.exe"
+            executablePath="G:\\_classic_era_\\WowClassic-arm64.exe"
             drives="G:${game.path}"
             wineVersion="custom-proton"
             graphicsDriver="custom-turnip"

@@ -20,7 +20,7 @@ import java.security.MessageDigest
  * World of Warcraft: Forever replaced the Classic beta: a beta install is upgraded in place (same Data/ archives), a new one is set up
  * without a PC. The fake CDN serves the real download path (configs, install and encoding manifests, archive index).
  */
-class WowForeverInstallTest {
+class WowClassicEraInstallTest {
     @get:Rule val temp = TemporaryFolder()
     private fun md5(b: ByteArray) = MessageDigest.getInstance("MD5").digest(b).joinToString("") { "%02x".format(it.toInt() and 255) }
     private fun unhex(s: String) = s.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
@@ -55,7 +55,7 @@ class WowForeverInstallTest {
     private class FakeCdn(val server: MockWebServer, val build: String, val cdn: String, val archiveKey: String, val client: ByteArray)
 
     private fun fakeCdn(client: ByteArray = "full release ARM64 client".toByteArray()): FakeCdn {
-        val files = linkedMapOf("Wow-ARM64.exe" to client)
+        val files = linkedMapOf("WowClassic-arm64.exe" to client)
         val installKey = "c".repeat(32); val encodingKey = "d".repeat(32); val archiveKey = "e".repeat(32)
         val buildBytes = "install = $installKey $installKey\nencoding = $encodingKey $encodingKey\n".toByteArray()
         val cdnBytes = "archives = $archiveKey\n".toByteArray()
@@ -77,7 +77,7 @@ class WowForeverInstallTest {
         return FakeCdn(server, build, cdn, archiveKey, client)
     }
 
-    private fun target(f: FakeCdn) = WowClientDownloader.VersionCheckResult("", "1.60.1.70707", true, f.build, f.cdn,
+    private fun target(f: FakeCdn) = WowClientDownloader.VersionCheckResult("", "1.15.9.70576", true, f.build, f.cdn,
         remoteCdnHosts = listOf("127.0.0.1:${f.server.port}"), remoteCdnPath = "tpr/wow",
         remoteCdnServers = listOf("http://level3.blizzard.com/?maxhosts=8", "https://us.cdn.blizzard.com/?maxhosts=4&fallback=1"))
 
@@ -87,7 +87,7 @@ class WowForeverInstallTest {
         return lines.drop(1).map { header.zip(it.split("|")).toMap() }
     }
 
-    @Test fun aBetaInstallIsUpgradedInPlaceAndKeepsItsDataRegionAndSettings() {
+    @Test fun eraInstallPreservesOtherProductsAndDoesNotImportBetaSettings() {
         val f = fakeCdn()
         try {
             val root = temp.newFolder()
@@ -101,41 +101,38 @@ class WowForeverInstallTest {
             val betaRow = "eu|1|${f.build}|${f.cdn}|1.60.1.70532|wow_classic_beta"
             val info = File(root, ".build.info").apply { writeText("Branch!STRING:0|Active!DEC:1|Build Key!HEX:16|CDN Key!HEX:16|Version!STRING:0|Product!STRING:0\n$betaRow\n") }
 
-            assertTrue(WowClientDownloader.isUpgradableBeta(root))
-            WowGameStatus.scan(root).let { assertTrue(it.upgradableBeta); assertFalse(it.wrongGame); assertFalse(it.executable) }
-            assertEquals("eu", WowClientDownloader.region(root))
+            WowGameStatus.scan(root).let { assertTrue(it.wrongGame); assertFalse(it.executable) }
 
             WowClientDownloader.updateGame(root, target(f), {}, region = "eu")
 
-            assertArrayEquals(f.client, File(root, "_forever_/Wow-ARM64.exe").readBytes())
+            assertArrayEquals(f.client, File(root, "_classic_era_/WowClassic-arm64.exe").readBytes())
             assertTrue(File(root, "Data/indices/${f.archiveKey}.index").isFile)
             assertEquals("shared archive", File(root, "Data/data/data.000").readText())
             val all = rows(info)
             assertEquals(2, all.size)
             assertEquals("wow_classic_beta", all[0]["Product"]); assertEquals("1.60.1.70532", all[0]["Version"])
-            val forever = all.single { it["Product"] == "wowf" }
-            assertEquals("1", forever["Active"]); assertEquals("eu", forever["Branch"]); assertEquals("1.60.1.70707", forever["Version"])
+            val forever = all.single { it["Product"] == "wow_classic_era" }
+            assertEquals("1", forever["Active"]); assertEquals("eu", forever["Branch"]); assertEquals("1.15.9.70576", forever["Version"])
             assertEquals("http://level3.blizzard.com/?maxhosts=8 https://us.cdn.blizzard.com/?maxhosts=4&fallback=1", forever["CDN Servers"])
             assertEquals("Windows arm64 EU? enUS speech?:Windows arm64 EU? enUS text?", forever["Tags"])
-            assertFalse(WowClientDownloader.isUpgradableBeta(root))
-            WowGameStatus.scan(root).let { assertFalse(it.upgradableBeta); assertFalse(it.wrongGame); assertTrue(it.executable); assertEquals("wowf", it.product) }
+            WowGameStatus.scan(root).let { assertFalse(it.wrongGame); assertTrue(it.executable); assertEquals("wow_classic_era", it.product) }
 
             WowGameConfig.prepare(root)
-            val config = File(root, "_forever_/WTF/Config.wtf").readText()
-            assertTrue(config.contains("SET farclip \"777\""))                       // the player's setting came across
+            val config = File(root, "_classic_era_/WTF/Config.wtf").readText()
+            assertTrue(config.contains("SET farclip \"1200\""))                       // beta settings are not imported
             assertTrue(config.contains("SET portal \"eu\"")); assertFalse(config.contains("\"test\""))
-            assertFalse(config.contains("CACHE-")); assertTrue(config.contains("SET agentUID \"wowf\""))
+            assertFalse(config.contains("CACHE-")); assertTrue(config.contains("SET agentUID \"wow_classic_era\""))
             assertTrue(config.contains("SET showScreenNarrationDialog \"0\""))
 
             // Another region chosen later moves the branch and the portal with it.
             WowClientDownloader.upsertBuildInfo(info, target(f), "us")
-            assertEquals("us", rows(info).single { it["Product"] == "wowf" }["Branch"])
+            assertEquals("us", rows(info).single { it["Product"] == "wow_classic_era" }["Branch"])
             WowGameConfig.prepare(root)
-            assertTrue(File(root, "_forever_/WTF/Config.wtf").readText().contains("SET portal \"us\""))
+            assertTrue(File(root, "_classic_era_/WTF/Config.wtf").readText().contains("SET portal \"us\""))
             // The region switch in Settings overrides the install's region for the next launch, without touching the install.
             WowGameConfig.prepare(root, region = "eu")
-            assertTrue(File(root, "_forever_/WTF/Config.wtf").readText().contains("SET portal \"eu\""))
-            assertEquals("us", rows(info).single { it["Product"] == "wowf" }["Branch"])
+            assertTrue(File(root, "_classic_era_/WTF/Config.wtf").readText().contains("SET portal \"eu\""))
+            assertEquals("us", rows(info).single { it["Product"] == "wow_classic_era" }["Branch"])
         } finally { f.server.shutdown() }
     }
 
@@ -143,15 +140,14 @@ class WowForeverInstallTest {
         val f = fakeCdn()
         try {
             val root = File(temp.newFolder(), "WoW Forever")
-            assertFalse(WowClientDownloader.isUpgradableBeta(root))
             File(root, "Data/indices").mkdirs()
             WowClientDownloader.updateGame(root, target(f), {}, region = "kr")
             val forever = rows(File(root, ".build.info")).single()
-            assertEquals("wowf", forever["Product"]); assertEquals("kr", forever["Branch"]); assertEquals("1", forever["Active"])
+            assertEquals("wow_classic_era", forever["Product"]); assertEquals("kr", forever["Branch"]); assertEquals("1", forever["Active"])
             assertTrue(forever["CDN Servers"]!!.isNotBlank())
             assertTrue(WowGameStatus.scan(root).let { it.executable && it.buildInfoValid && !it.wrongGame })
             WowGameConfig.prepare(root)
-            assertTrue(File(root, "_forever_/WTF/Config.wtf").readText().contains("SET portal \"kr\""))
+            assertTrue(File(root, "_classic_era_/WTF/Config.wtf").readText().contains("SET portal \"kr\""))
         } finally { f.server.shutdown() }
     }
 
@@ -164,17 +160,17 @@ class WowForeverInstallTest {
             File(root, "Data/indices").mkdirs()
             val statuses = java.util.Collections.synchronizedList(mutableListOf<String>())
             WowClientDownloader.updateGame(root, target(f), { statuses += it }, region = "eu")
-            assertTrue(File(root, "_forever_/Wow-ARM64.exe").readBytes().contentEquals(client))
+            assertTrue(File(root, "_classic_era_/WowClassic-arm64.exe").readBytes().contentEquals(client))
             val ranged = (0 until f.server.requestCount).map { f.server.takeRequest() }.count { it.getHeader("Range") != null }
             assertTrue("ranged requests: $ranged", ranged >= 3)
-            assertTrue(statuses.any { it.startsWith("Downloading Wow-ARM64.exe (1/1): 9.0 / 9.0 MB") })
+            assertTrue(statuses.any { it.startsWith("Downloading WowClassic-arm64.exe (1/1): 9.0 / 9.0 MB") })
         } finally { f.server.shutdown() }
     }
 
     @Test fun theChosenGameLanguageReplacesTheFilesOneAndKeepLeavesIt() {
         val root = temp.newFolder()
         WowGameConfig.prepare(root)
-        val config = File(root, "_forever_/WTF/Config.wtf")
+        val config = File(root, "_classic_era_/WTF/Config.wtf")
         assertTrue(config.readText().contains("SET textLocale \"enUS\""))
         WowGameConfig.prepare(root, locale = "deDE")
         config.readText().let { assertTrue(it.contains("SET textLocale \"deDE\"")); assertTrue(it.contains("SET audioLocale \"deDE\"")); assertFalse(it.contains("enUS")) }
